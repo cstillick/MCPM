@@ -6,7 +6,20 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette_csrf import CSRFMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette_csrf import CSRFMiddleware as _CSRFMiddleware
+
+
+class CSRFMiddleware(_CSRFMiddleware):
+    """Extends starlette-csrf to also accept the token from form data."""
+    async def _get_submitted_csrf_token(self, request: StarletteRequest):
+        token = request.headers.get(self.header_name)
+        if not token:
+            content_type = request.headers.get("content-type", "")
+            if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+                form = await request.form()
+                token = form.get(self.cookie_name)
+        return token
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
