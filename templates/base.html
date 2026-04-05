@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MK Predictions{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .mk-red { background-color: #CC0000; }
+    .mk-red-hover:hover { background-color: #AA0000; }
+    .coin-yellow { color: #F5A623; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+
+  <!-- Nav -->
+  <nav class="mk-red shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="text-white font-extrabold text-xl tracking-wide flex items-center gap-2">
+        <span class="text-2xl">🏎️</span> MK Predictions
+      </a>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="/" class="text-white hover:text-yellow-300 font-medium">Games</a>
+        <a href="/players" class="text-white hover:text-yellow-300 font-medium">Players</a>
+        {% if user %}
+          <a href="/my-bets" class="text-white hover:text-yellow-300 font-medium">My Bets</a>
+          <span class="text-yellow-300 font-bold">🪙 {{ user.coin_balance }}</span>
+          {% if user.is_admin %}
+            <a href="/admin" class="bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded hover:bg-yellow-300">Admin</a>
+          {% endif %}
+          <a href="/logout" class="text-white hover:text-red-200 font-medium">Logout ({{ user.username }})</a>
+        {% else %}
+          <a href="/login" class="bg-white text-red-700 font-bold px-3 py-1 rounded hover:bg-gray-100">Login</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  {% if flash %}
+    <div class="max-w-6xl mx-auto px-4 pt-4">
+      <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
+        {{ flash }}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Page content -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center text-gray-400 text-xs py-6 mt-8">
+    MK Prediction Market &mdash; Among Friends Only
+  </footer>
+
+</body>
+</html>

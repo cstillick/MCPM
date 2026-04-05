@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Import ELOs — Admin{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+  <a href="/admin" class="text-sm text-gray-400 hover:text-gray-600">&larr; Dashboard</a>
+  <h1 class="text-2xl font-extrabold text-gray-800">📊 Import ELO Data</h1>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <!-- Upload form -->
+  <div class="bg-white rounded-xl shadow p-6">
+    {% if message %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+        {% if 'complete' in message %}bg-green-100 text-green-800 border border-green-300
+        {% else %}bg-red-100 text-red-800 border border-red-300{% endif %}">
+        {{ message }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="/admin/elo-import" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Upload JSON File</label>
+        <input type="file" name="file" accept=".json" required
+               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0 file:text-sm file:font-bold
+                      file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer" />
+      </div>
+      <button type="submit"
+              class="mk-red mk-red-hover text-white font-bold px-6 py-2.5 rounded-xl shadow transition">
+        Import Players &amp; ELOs
+      </button>
+    </form>
+  </div>
+
+  <!-- Format guide -->
+  <div class="bg-gray-50 rounded-xl border border-gray-200 p-6">
+    <h2 class="font-bold text-gray-700 mb-3">JSON Format</h2>
+    <p class="text-sm text-gray-500 mb-3">
+      Upload a JSON array of player objects. Only <code class="bg-gray-200 px-1 rounded">name</code>
+      and <code class="bg-gray-200 px-1 rounded">elo</code> are required. All other fields are optional.
+    </p>
+    <pre class="bg-gray-800 text-green-300 text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>[
+  {
+    "name": "Mario",
+    "elo": 1523.4,
+    "total_wins": 42,
+    "shirt_swap_count": 38,
+    "total_games": 20,
+    "total_races": 320,
+    "head_to_head": {
+      "Luigi": { "wins": 12, "losses": 8 },
+      "Peach": { "wins": 15, "losses": 5 }
+    }
+  },
+  {
+    "name": "Luigi",
+    "elo": 1478.1,
+    "total_wins": 35
+  }
+]</code></pre>
+    <p class="text-xs text-gray-400 mt-3">
+      Players are matched by <strong>name</strong>. Existing players are updated; new names are created.
+      Head-to-head records are merged, not replaced.
+    </p>
+  </div>
+</div>
+{% endblock %}

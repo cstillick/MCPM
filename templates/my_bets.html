@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}My Bets — MK Predictions{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-3xl font-extrabold text-gray-800">🪙 My Bets</h1>
+  <div class="bg-white rounded-xl shadow px-5 py-3 text-center">
+    <p class="text-xs text-gray-400">Coin Balance</p>
+    <p class="text-2xl font-extrabold text-yellow-500">🪙 {{ user.coin_balance }}</p>
+  </div>
+</div>
+
+{% if bets %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+      <p class="text-xs text-gray-400">Total Bets</p>
+      <p class="text-2xl font-extrabold text-gray-700">{{ bets | length }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+      <p class="text-xs text-gray-400">Total Wagered</p>
+      <p class="text-2xl font-extrabold text-gray-700">🪙 {{ total_wagered }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+      <p class="text-xs text-gray-400">Bets Won</p>
+      <p class="text-2xl font-extrabold text-green-600">{{ bets_won }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+      <p class="text-xs text-gray-400">Total Returned</p>
+      <p class="text-2xl font-extrabold text-green-600">🪙 {{ total_payout }}</p>
+    </div>
+  </div>
+
+  <!-- Bet list -->
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+        <tr>
+          <th class="px-4 py-3 text-left">Market</th>
+          <th class="px-4 py-3 text-left">Your Pick</th>
+          <th class="px-4 py-3 text-right">Wagered</th>
+          <th class="px-4 py-3 text-center">Status</th>
+          <th class="px-4 py-3 text-right">Payout</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for bet in bets %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3">
+              <a href="/games/{{ bet.market.game_id }}" class="text-blue-600 hover:underline font-medium">
+                {{ bet.market.description | truncate(50) }}
+              </a>
+              {% if bet.market.race_id %}
+                <span class="ml-1 text-xs text-gray-400">(Race {{ bet.market.race.race_number }})</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 font-semibold text-gray-700">{{ bet.option.label }}</td>
+            <td class="px-4 py-3 text-right font-mono text-gray-600">🪙 {{ bet.coins_wagered }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if bet.market.status == 'settled' %}
+                {% if bet.payout and bet.payout > 0 %}
+                  <span class="bg-green-100 text-green-700 font-bold text-xs px-2 py-0.5 rounded-full">Won</span>
+                {% else %}
+                  <span class="bg-red-100 text-red-600 font-bold text-xs px-2 py-0.5 rounded-full">Lost</span>
+                {% endif %}
+              {% elif bet.market.status == 'open' %}
+                <span class="bg-blue-100 text-blue-600 font-bold text-xs px-2 py-0.5 rounded-full">Open</span>
+              {% else %}
+                <span class="bg-yellow-100 text-yellow-700 font-bold text-xs px-2 py-0.5 rounded-full">Pending</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-mono font-bold">
+              {% if bet.payout is not none %}
+                {% if bet.payout > 0 %}
+                  <span class="text-green-600">+🪙 {{ bet.payout }}</span>
+                {% else %}
+                  <span class="text-red-400">—</span>
+                {% endif %}
+              {% else %}
+                <span class="text-gray-300">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="bg-white rounded-xl shadow p-10 text-center text-gray-400">
+    <p class="text-4xl mb-3">🪙</p>
+    <p class="font-semibold">No bets placed yet.</p>
+    <p class="text-sm mt-1">Head to an <a href="/" class="text-blue-500 hover:underline">upcoming game</a> to place your first bet!</p>
+  </div>
+{% endif %}
+{% endblock %}

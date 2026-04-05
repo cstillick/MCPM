@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Manage Users — Admin{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+  <a href="/admin" class="text-sm text-gray-400 hover:text-gray-600">&larr; Dashboard</a>
+  <h1 class="text-2xl font-extrabold text-gray-800">👤 Manage Users</h1>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <!-- Create user form -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-xl shadow p-5">
+      <h2 class="font-bold text-gray-700 mb-4">Create Account</h2>
+      <form method="post" action="/admin/users/create" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Username</label>
+          <input type="text" name="username" required minlength="3" maxlength="32"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Password</label>
+          <input type="password" name="password" required minlength="6"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_admin" id="is_admin" value="true" class="accent-red-600" />
+          <label for="is_admin" class="text-sm text-gray-600">Admin privileges</label>
+        </div>
+        <button type="submit"
+                class="w-full mk-red mk-red-hover text-white font-bold py-2 rounded-lg text-sm transition">
+          Create Account
+        </button>
+      </form>
+    </div>
+
+    <!-- Add coins form -->
+    <div class="bg-white rounded-xl shadow p-5 mt-4">
+      <h2 class="font-bold text-gray-700 mb-4">Add Mario Coins</h2>
+      <form method="post" action="/admin/users/add-coins" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">User</label>
+          <select name="user_id" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+            {% for u in users %}
+              <option value="{{ u.id }}">{{ u.username }} (🪙 {{ u.coin_balance }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Amount</label>
+          <input type="number" name="amount" min="1" value="500"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+        </div>
+        <button type="submit"
+                class="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 rounded-lg text-sm transition">
+          Add Coins 🪙
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+          <tr>
+            <th class="px-4 py-3 text-left">Username</th>
+            <th class="px-4 py-3 text-center">Role</th>
+            <th class="px-4 py-3 text-right">Coins</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for u in users %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-semibold text-gray-800">{{ u.username }}</td>
+              <td class="px-4 py-3 text-center">
+                {% if u.is_admin %}
+                  <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">Admin</span>
+                {% else %}
+                  <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Player</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right font-bold text-yellow-600">🪙 {{ u.coin_balance }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="3" class="px-4 py-8 text-center text-gray-400 italic">No users yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
