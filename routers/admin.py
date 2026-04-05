@@ -12,7 +12,7 @@ from auth import get_current_user, require_admin
 from database import get_db
 from models import (
     Bet, BetMarket, BetOption, Game, HeadToHead,
-    Player, Race, RaceResult, Team, User,
+    PendingRegistration, Player, Race, RaceResult, Team, User,
 )
 from auth import hash_password
 from template_env import templates
@@ -27,9 +27,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     admin = require_admin(request, db)
     games = db.query(Game).order_by(Game.created_at.desc()).all()
     users = db.query(User).order_by(User.username).all()
+    pending_count = db.query(PendingRegistration).count()
     return templates.TemplateResponse(
         "admin/dashboard.html",
-        {"request": request, "user": admin, "games": games, "users": users},
+        {"request": request, "user": admin, "games": games, "users": users, "pending_count": pending_count},
     )
 
 
@@ -39,10 +40,38 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 def users_page(request: Request, db: Session = Depends(get_db)):
     admin = require_admin(request, db)
     users = db.query(User).order_by(User.username).all()
+    pending = db.query(PendingRegistration).order_by(PendingRegistration.created_at).all()
     return templates.TemplateResponse(
         "admin/users.html",
-        {"request": request, "user": admin, "users": users},
+        {"request": request, "user": admin, "users": users, "pending": pending},
     )
+
+
+@router.post("/users/approve/{pending_id}")
+def approve_user(request: Request, pending_id: int, db: Session = Depends(get_db)):
+    require_admin(request, db)
+    pending = db.query(PendingRegistration).filter(PendingRegistration.id == pending_id).first()
+    if not pending:
+        raise HTTPException(status_code=404, detail="Pending registration not found")
+    if db.query(User).filter(User.username == pending.username).first():
+        db.delete(pending)
+        db.commit()
+        raise HTTPException(status_code=400, detail="Username already exists as an active user")
+    db.add(User(username=pending.username, password_hash=pending.password_hash, is_admin=False, coin_balance=1000))
+    db.delete(pending)
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=302)
+
+
+@router.post("/users/reject/{pending_id}")
+def reject_user(request: Request, pending_id: int, db: Session = Depends(get_db)):
+    require_admin(request, db)
+    pending = db.query(PendingRegistration).filter(PendingRegistration.id == pending_id).first()
+    if not pending:
+        raise HTTPException(status_code=404, detail="Pending registration not found")
+    db.delete(pending)
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=302)
 
 
 @router.post("/users/create")

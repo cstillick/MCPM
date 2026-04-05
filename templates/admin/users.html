@@ -62,6 +62,37 @@
 
   <!-- Users table -->
   <div class="lg:col-span-2">
+
+    <!-- Pending approvals -->
+    {% if pending %}
+      <div class="bg-yellow-50 border border-yellow-300 rounded-xl p-4 mb-4">
+        <h2 class="font-bold text-yellow-800 mb-3">⏳ Pending Approvals ({{ pending | length }})</h2>
+        <div class="space-y-2">
+          {% for p in pending %}
+            <div class="flex items-center justify-between bg-white rounded-lg px-4 py-2 border border-yellow-200">
+              <div>
+                <span class="font-semibold text-gray-800">{{ p.username }}</span>
+                <span class="text-xs text-gray-400 ml-2">requested {{ p.created_at.strftime('%b %d, %Y') }}</span>
+              </div>
+              <div class="flex gap-2">
+                <form method="post" action="/admin/users/approve/{{ p.id }}">
+                  <button type="submit"
+                          class="text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1 rounded-lg">
+                    Approve
+                  </button>
+                </form>
+                <form method="post" action="/admin/users/reject/{{ p.id }}">
+                  <button type="submit"
+                          class="text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold px-3 py-1 rounded-lg">
+                    Reject
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
     <div class="bg-white rounded-xl shadow overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">

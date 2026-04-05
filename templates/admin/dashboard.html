@@ -14,9 +14,14 @@
     Create Game
   </a>
   <a href="/admin/users"
-     class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-4 text-center font-bold transition shadow">
+     class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-4 text-center font-bold transition shadow relative">
     <div class="text-2xl mb-1">👤</div>
     Manage Users
+    {% if pending_count > 0 %}
+      <span class="absolute -top-2 -right-2 bg-yellow-400 text-gray-900 text-xs font-extrabold rounded-full w-6 h-6 flex items-center justify-center shadow">
+        {{ pending_count }}
+      </span>
+    {% endif %}
   </a>
   <a href="/admin/elo-import"
      class="bg-green-600 hover:bg-green-700 text-white rounded-xl p-4 text-center font-bold transition shadow">
