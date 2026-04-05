@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
 from models import Bet, BetMarket, BetOption, Game, Race, RaceResult
+from template_env import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 def elo_win_probability(elo_a: float, elo_b: float) -> float:

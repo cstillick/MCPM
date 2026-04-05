@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -8,10 +7,11 @@ from auth import (
     get_current_user,
 )
 from database import get_db
+from limiter import limiter
 from models import User
+from template_env import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -23,6 +23,7 @@ def login_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
+@limiter.limit("10/minute")
 def login(
     request: Request,
     response: Response,
@@ -44,6 +45,7 @@ def login(
         token,
         httponly=True,
         samesite="lax",
+        secure=True,
         max_age=60 * 60 * 24 * 7,  # 7 days
     )
     return resp

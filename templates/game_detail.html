@@ -162,6 +162,7 @@
           {% elif market.status == 'open' and user %}
             <!-- Bet form -->
             <form method="post" action="/bets/place" x-data="{ selected: null, amount: 50 }">
+              <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
               <input type="hidden" name="market_id" value="{{ market.id }}" />
               <div class="space-y-2 mb-3">
                 {% for option in market.options %}

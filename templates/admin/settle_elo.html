@@ -16,6 +16,7 @@
 
     {% if elo_markets %}
       <form method="post" action="/admin/games/{{ game.id }}/settle-elo-submit" class="space-y-4">
+        <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
         {% for market in elo_markets %}
           <!-- Extract player name from description -->
           {% set player_name = market.description.split('Will ')[1].split(' gain')[0] %}

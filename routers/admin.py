@@ -6,7 +6,6 @@ from fastapi import (
     Request, UploadFile,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user, require_admin
@@ -16,9 +15,9 @@ from models import (
     Player, Race, RaceResult, Team, User,
 )
 from auth import hash_password
+from template_env import templates
 
 router = APIRouter(prefix="/admin")
-templates = Jinja2Templates(directory="templates")
 
 
 # ── Dashboard ────────────────────────────────────────────────────────────────

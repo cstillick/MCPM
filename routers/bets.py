@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from auth import get_current_user, require_login
 from database import get_db
 from models import Bet, BetMarket, BetOption, User
+from template_env import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/my-bets", response_class=HTMLResponse)

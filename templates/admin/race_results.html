@@ -15,6 +15,7 @@
 
     <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/results"
           x-data="resultsForm()">
+      <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
       <div class="space-y-3">
         {% for player in players %}
           <div class="flex items-center gap-4">

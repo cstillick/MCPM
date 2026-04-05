@@ -18,6 +18,7 @@
   <span class="text-sm font-semibold text-gray-600">Change status:</span>
   {% for status in ['upcoming', 'live', 'completed'] %}
     <form method="post" action="/admin/games/{{ game.id }}/set-status" class="inline">
+      <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
       <input type="hidden" name="new_status" value="{{ status }}" />
       <button type="submit"
               class="text-sm font-bold px-4 py-1.5 rounded-lg border transition
@@ -120,6 +121,7 @@
             <td class="px-4 py-2 text-right flex justify-end gap-3">
               {% if race.status == 'pending' %}
                 <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/open-betting">
+                  <input type="hidden" name="csrftoken" value="{{ csrf_token(request) }}" />
                   <button type="submit"
                           class="text-xs bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1 rounded-lg">
                     Open Betting
