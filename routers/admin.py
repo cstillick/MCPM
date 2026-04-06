@@ -436,6 +436,43 @@ def admin_game_detail(game_id: int, request: Request, db: Session = Depends(get_
     )
 
 
+@router.post("/games/{game_id}/delete")
+def delete_game(request: Request, game_id: int, db: Session = Depends(get_db)):
+    require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if game.status != "upcoming":
+        raise HTTPException(status_code=400, detail="Only upcoming games can be deleted")
+
+    # 1. Refund bets and delete coin transactions + bets
+    markets = db.query(BetMarket).filter(BetMarket.game_id == game_id).all()
+    for market in markets:
+        bets = db.query(Bet).filter(Bet.market_id == market.id).all()
+        for bet in bets:
+            user = db.query(User).filter(User.id == bet.user_id).first()
+            if user:
+                user.coin_balance += bet.coins_wagered
+            db.query(CoinTransaction).filter(CoinTransaction.bet_id == bet.id).delete()
+            db.delete(bet)
+        db.query(BetOption).filter(BetOption.market_id == market.id).delete()
+        db.delete(market)
+
+    # 2. Delete race results and races
+    races = db.query(Race).filter(Race.game_id == game_id).all()
+    for race in races:
+        db.query(RaceResult).filter(RaceResult.race_id == race.id).delete()
+        db.delete(race)
+
+    # 3. Delete teams
+    db.query(Team).filter(Team.game_id == game_id).delete()
+
+    # 4. Delete the game
+    db.delete(game)
+    db.commit()
+    return RedirectResponse("/admin", status_code=302)
+
+
 @router.post("/games/{game_id}/races/{race_id}/open-betting")
 def open_race_betting(
     game_id: int,

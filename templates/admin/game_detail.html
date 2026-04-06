@@ -31,6 +31,31 @@
     </form>
   {% endfor %}
   <a href="/games/{{ game.id }}" class="ml-auto text-sm text-k-accent hover:underline">View public page &rarr;</a>
+  {% if game.status == "upcoming" %}
+  <div x-data="{ confirm: false }">
+    <button @click="confirm = true"
+      class="text-sm font-semibold px-4 py-1.5 rounded-lg border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors">
+      Delete Game
+    </button>
+    <div x-show="confirm" x-cloak class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div class="bg-k-surface border border-k-border rounded-xl p-6 max-w-sm w-full mx-4">
+        <p class="text-k-text font-bold mb-2">Delete "{{ game.name }}"?</p>
+        <p class="text-k-sub text-sm mb-4">This will permanently delete the game, all races, markets, and refund any placed bets. This cannot be undone.</p>
+        <div class="flex gap-3">
+          <form method="POST" action="/admin/games/{{ game.id }}/delete">
+            <button type="submit" class="bg-red-600 text-white font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm">
+              Yes, Delete
+            </button>
+          </form>
+          <button @click="confirm = false"
+            class="border border-k-border text-k-text font-semibold px-4 py-2 rounded-lg hover:border-k-sub text-sm transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- Teams overview -->
