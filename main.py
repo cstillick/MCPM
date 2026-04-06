@@ -40,6 +40,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI):
     # Create all tables on startup (idempotent)
     Base.metadata.create_all(bind=engine)
+    # Add columns that may not exist in older deployments
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE players ADD COLUMN retired BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
     yield
 
 
