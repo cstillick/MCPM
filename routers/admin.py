@@ -721,13 +721,33 @@ def _parse_firebase_export(data: dict) -> list:
 
 
 @router.get("/elo-import", response_class=HTMLResponse)
-def elo_import_page(request: Request, reset: str = None, db: Session = Depends(get_db)):
+def elo_import_page(request: Request, reset: str = None, retired: str = None, db: Session = Depends(get_db)):
     admin = require_admin(request, db)
-    message = "All ELO data has been reset to defaults." if reset == "1" else None
+    if reset == "1":
+        message = "All ELO data has been reset to defaults."
+    elif retired == "1":
+        message = "Retired status saved."
+    else:
+        message = None
+    players = db.query(Player).order_by(Player.name).all()
     return templates.TemplateResponse(
         "admin/elo_import.html",
-        {"request": request, "user": admin, "message": message, "reset_success": reset == "1"},
+        {"request": request, "user": admin, "message": message, "reset_success": reset == "1", "players": players},
     )
+
+
+@router.post("/players/retired")
+async def update_retired(request: Request, db: Session = Depends(get_db)):
+    require_admin(request, db)
+    form = await request.form()
+    retired_ids = {int(v) for v in form.getlist("retired_ids")}
+    db.query(Player).update({"retired": False}, synchronize_session=False)
+    if retired_ids:
+        db.query(Player).filter(Player.id.in_(retired_ids)).update(
+            {"retired": True}, synchronize_session=False
+        )
+    db.commit()
+    return RedirectResponse("/admin/elo-import?retired=1", status_code=302)
 
 
 @router.post("/elo-import")

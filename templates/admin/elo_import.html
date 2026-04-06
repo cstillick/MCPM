@@ -83,6 +83,34 @@
   </div>
 </div>
 
+<!-- Retired players -->
+{% if players %}
+<div class="mt-8 bg-k-surface rounded-xl border border-k-border shadow-card p-6">
+  <h2 class="font-semibold text-k-text text-sm uppercase tracking-wider mb-1">Retired Players</h2>
+  <p class="text-sm text-k-sub mb-4">Check players who should be hidden from the scoreboard. Retired players and players with default ELO (1000) are excluded from <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">/players</code>.</p>
+  <form method="post" action="/admin/players/retired">
+    <div class="divide-y divide-k-border">
+      {% for player in players %}
+      <label class="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-[#1a1a1f] px-2 rounded transition-colors">
+        <input type="checkbox" name="retired_ids" value="{{ player.id }}"
+               {% if player.retired %}checked{% endif %}
+               class="accent-[#FF9500] w-4 h-4 flex-shrink-0">
+        <span class="text-k-text text-sm flex-1">{{ player.name }}</span>
+        <span class="text-k-sub text-xs tabular-nums">{{ player.elo | round(1) }}</span>
+        {% if player.retired %}<span class="text-xs text-mk-sub italic">retired</span>{% endif %}
+      </label>
+      {% endfor %}
+    </div>
+    <div class="mt-4">
+      <button type="submit"
+              class="bg-mk-amber text-[#0A0A0B] font-bold px-5 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm">
+        Save Retired Status
+      </button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
 <!-- Danger zone: reset ELO -->
 <div class="mt-8 bg-k-surface rounded-xl border border-k-no/30 shadow-card p-6 max-w-lg"
      x-data="{ confirm: false }">

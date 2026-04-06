@@ -40,6 +40,7 @@ class Player(Base):
     shirt_swap_count = Column(Integer, default=0)
     total_games = Column(Integer, default=0)
     total_races = Column(Integer, default=0)
+    retired = Column(Boolean, default=False, nullable=False)
 
 
 class HeadToHead(Base):

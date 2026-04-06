@@ -13,7 +13,12 @@ router = APIRouter()
 @router.get("/players", response_class=HTMLResponse)
 def players_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
-    players = db.query(Player).order_by(Player.elo.desc()).all()
+    players = (
+        db.query(Player)
+        .filter(Player.elo != 1000.0, Player.retired == False)
+        .order_by(Player.elo.desc())
+        .all()
+    )
 
     # Build H2H matrix: {player_a_id: {player_b_id: {"wins": int, "losses": int}}}
     h2h_records = db.query(HeadToHead).all()
