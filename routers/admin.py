@@ -690,10 +690,10 @@ def _parse_firebase_export(data: dict) -> list:
                     if sname:
                         stats[sname]["races"] += 1
 
-    # Step 2: build player list from ELO_History (preferred) or ELO (fallback)
+    # Step 2: build player list from ELO_history (preferred) or ELO (fallback)
     result = []
-    if "ELO_History" in data:
-        for name, history in data["ELO_History"].items():
+    if "ELO_history" in data:
+        for name, history in data["ELO_history"].items():
             if not isinstance(history, dict):
                 continue
             latest = max(history.values(), key=lambda e: e.get("at", 0) if isinstance(e, dict) else 0)
@@ -747,7 +747,7 @@ async def elo_import(
             status_code=400,
         )
 
-    if isinstance(data, dict) and ("ELO_History" in data or "ELO" in data):
+    if isinstance(data, dict) and ("ELO_history" in data or "ELO" in data):
         data = _parse_firebase_export(data)
     elif not isinstance(data, list):
         return templates.TemplateResponse(
