@@ -38,9 +38,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from database import DATABASE_URL
-    import logging
-    logging.warning(f"DATABASE: {DATABASE_URL[:30]}...")
     # Create all tables on startup (idempotent)
     Base.metadata.create_all(bind=engine)
     yield
