@@ -586,30 +586,30 @@ def delete_game(request: Request, game_id: int, db: Session = Depends(get_db)):
     if game.status != "upcoming":
         raise HTTPException(status_code=400, detail="Only upcoming games can be deleted")
 
-    # 1. Refund bets and delete coin transactions + bets
-    markets = db.query(BetMarket).filter(BetMarket.game_id == game_id).all()
-    for market in markets:
-        bets = db.query(Bet).filter(Bet.market_id == market.id).all()
+    # Collect IDs for bulk operations
+    market_ids = [m.id for m in db.query(BetMarket.id).filter(BetMarket.game_id == game_id).all()]
+    race_ids = [r.id for r in db.query(Race.id).filter(Race.game_id == game_id).all()]
+
+    # Refund coins for any bets placed
+    if market_ids:
+        bets = db.query(Bet).filter(Bet.market_id.in_(market_ids)).all()
         for bet in bets:
             user = db.query(User).filter(User.id == bet.user_id).first()
             if user:
                 user.coin_balance += bet.coins_wagered
-            db.query(CoinTransaction).filter(CoinTransaction.bet_id == bet.id).delete()
-            db.delete(bet)
-        db.query(BetOption).filter(BetOption.market_id == market.id).delete()
-        db.delete(market)
+        bet_ids = [bet.id for bet in bets]
+        if bet_ids:
+            db.query(CoinTransaction).filter(CoinTransaction.bet_id.in_(bet_ids)).delete(synchronize_session=False)
+            db.query(Bet).filter(Bet.market_id.in_(market_ids)).delete(synchronize_session=False)
+        db.query(BetOption).filter(BetOption.market_id.in_(market_ids)).delete(synchronize_session=False)
+        db.query(BetMarket).filter(BetMarket.id.in_(market_ids)).delete(synchronize_session=False)
 
-    # 2. Delete race results and races
-    races = db.query(Race).filter(Race.game_id == game_id).all()
-    for race in races:
-        db.query(RaceResult).filter(RaceResult.race_id == race.id).delete()
-        db.delete(race)
+    if race_ids:
+        db.query(RaceResult).filter(RaceResult.race_id.in_(race_ids)).delete(synchronize_session=False)
+        db.query(Race).filter(Race.id.in_(race_ids)).delete(synchronize_session=False)
 
-    # 3. Delete teams
-    db.query(Team).filter(Team.game_id == game_id).delete()
-
-    # 4. Delete the game
-    db.delete(game)
+    db.query(Team).filter(Team.game_id == game_id).delete(synchronize_session=False)
+    db.query(Game).filter(Game.id == game_id).delete(synchronize_session=False)
     db.commit()
     return RedirectResponse("/admin", status_code=302)
 
