@@ -477,6 +477,69 @@ def _settle_market(db: Session, market: BetMarket, winning_label: str):
 
 # ── ELO import ────────────────────────────────────────────────────────────────
 
+def _parse_firebase_export(data: dict) -> list:
+    """Convert a Firebase RTDB export to the player-list format expected by the importer.
+
+    Extracts ELO values from data["ELO"] and computes total_games, total_races,
+    and total_wins per player from data["act-history"].
+    """
+    # Step 1: compute stats from act-history
+    stats: dict = {}  # {stripped_name: {games, races, wins}}
+    for game in data.get("act-history", {}).values():
+        if not isinstance(game, dict) or "teams" not in game or "races" not in game:
+            continue
+        teams = game["teams"]
+        totals = game.get("totals", {})
+        if totals:
+            min_score = min(totals.values())
+            winning_teams = {t for t, s in totals.items() if s == min_score}
+        else:
+            winning_teams = set()
+
+        # Map (team_letter, slot) -> stripped player name
+        slot_map: dict = {}
+        for team_letter, team_data in teams.items():
+            if not isinstance(team_data, dict):
+                continue
+            for slot, name in team_data.get("players", {}).items():
+                if not name:
+                    continue
+                sname = name.strip()
+                slot_map[(team_letter, slot)] = sname
+                if sname not in stats:
+                    stats[sname] = {"games": 0, "races": 0, "wins": 0}
+                stats[sname]["games"] += 1
+                if team_letter in winning_teams:
+                    stats[sname]["wins"] += 1
+
+        # Count individual race appearances
+        for race_list in game.get("races", {}).values():
+            for race_entry in race_list:
+                if not isinstance(race_entry, dict):
+                    continue
+                for team_letter, result in race_entry.items():
+                    if not isinstance(result, dict):
+                        continue
+                    racer_slot = result.get("racer")
+                    sname = slot_map.get((team_letter, racer_slot))
+                    if sname:
+                        stats[sname]["races"] += 1
+
+    # Step 2: build player list from ELO dict
+    result = []
+    for name, elo in data["ELO"].items():
+        s = stats.get(name.strip(), {"games": 0, "races": 0, "wins": 0})
+        result.append({
+            "name": name,
+            "elo": float(elo),
+            "total_wins": s["wins"],
+            "total_games": s["games"],
+            "total_races": s["races"],
+        })
+    return result
+
+
+
 @router.get("/elo-import", response_class=HTMLResponse)
 def elo_import_page(request: Request, db: Session = Depends(get_db)):
     admin = require_admin(request, db)
@@ -503,10 +566,12 @@ async def elo_import(
             status_code=400,
         )
 
-    if not isinstance(data, list):
+    if isinstance(data, dict) and "ELO" in data:
+        data = _parse_firebase_export(data)
+    elif not isinstance(data, list):
         return templates.TemplateResponse(
             "admin/elo_import.html",
-            {"request": request, "user": get_current_user(request, db), "message": "JSON must be a list of player objects"},
+            {"request": request, "user": get_current_user(request, db), "message": "JSON must be a list of player objects or a Firebase RTDB export"},
             status_code=400,
         )
 
