@@ -4,36 +4,91 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}ACT Predictions{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'mk-bg':      '#0A0A0B',
+            'mk-surface': '#131316',
+            'mk-border':  '#252530',
+            'mk-amber':   '#FF9500',
+            'mk-red':     '#FF3824',
+            'mk-green':   '#30D158',
+            'mk-text':    '#F5F5F0',
+            'mk-sub':     '#6E6E78',
+          },
+          fontFamily: {
+            'display': ['Oxanium', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
+    :root {
+      --bg:      #0A0A0B;
+      --surface: #131316;
+      --border:  #252530;
+      --amber:   #FF9500;
+      --red:     #FF3824;
+      --green:   #30D158;
+      --text:    #F5F5F0;
+      --sub:     #6E6E78;
+    }
+
     [x-cloak] { display: none !important; }
-    .mk-red { background-color: #CC0000; }
-    .mk-red-hover:hover { background-color: #AA0000; }
-    .coin-yellow { color: #F5A623; }
+
+    body {
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        var(--border) 39px,
+        var(--border) 40px
+      );
+      background-attachment: fixed;
+    }
+
+    @keyframes amber-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+    .animate-amber-pulse { animation: amber-pulse 1.5s ease-in-out infinite; }
+
+    /* Ensure selects render dark */
+    select option { background-color: var(--surface); color: var(--text); }
+
+    /* Color scheme for date inputs on dark */
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+<body class="bg-mk-bg min-h-screen font-display text-mk-text">
 
   <!-- Nav -->
-  <nav class="mk-red shadow-lg">
+  <nav class="bg-mk-surface border-b border-mk-border">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-white font-extrabold text-xl tracking-wide flex items-center gap-2">
+      <a href="/" class="text-mk-amber font-extrabold text-xl tracking-widest flex items-center gap-2 uppercase">
         <span class="text-2xl">🏎️</span> ACT Predictions
       </a>
       <div class="flex items-center gap-4 text-sm">
-        <a href="/" class="text-white hover:text-yellow-300 font-medium">Games</a>
-        <a href="/players" class="text-white hover:text-yellow-300 font-medium">Players</a>
+        <a href="/" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Games</a>
+        <a href="/players" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Players</a>
         {% if user %}
-          <a href="/my-bets" class="text-white hover:text-yellow-300 font-medium">My Bets</a>
-          <a href="/transactions" class="text-white hover:text-yellow-300 font-medium">Transactions</a>
-          <span class="text-yellow-300 font-bold">🪙 {{ user.coin_balance }}</span>
+          <a href="/my-bets" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">My Bets</a>
+          <a href="/transactions" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Transactions</a>
+          <span class="text-mk-amber font-bold tracking-wider">🪙 {{ user.coin_balance }}</span>
           {% if user.is_admin %}
-            <a href="/admin" class="bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded hover:bg-yellow-300">Admin</a>
+            <a href="/admin" class="bg-mk-amber text-[#0A0A0B] font-bold px-3 py-1 rounded hover:opacity-90 transition-opacity tracking-wide">Admin</a>
           {% endif %}
-          <a href="/logout" class="text-white hover:text-red-200 font-medium">Logout ({{ user.username }})</a>
+          <a href="/logout" class="text-mk-sub hover:text-mk-text transition-colors font-medium">Logout ({{ user.username }})</a>
         {% else %}
-          <a href="/login" class="bg-white text-red-700 font-bold px-3 py-1 rounded hover:bg-gray-100">Login</a>
+          <a href="/login" class="border border-mk-amber text-mk-amber font-bold px-3 py-1 rounded hover:bg-mk-amber hover:text-[#0A0A0B] transition-colors">Login</a>
         {% endif %}
       </div>
     </div>
@@ -42,7 +97,7 @@
   <!-- Flash messages -->
   {% if flash %}
     <div class="max-w-6xl mx-auto px-4 pt-4">
-      <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
+      <div class="border-l-4 border-mk-green bg-mk-surface px-4 py-3 text-mk-text text-sm rounded-r">
         {{ flash }}
       </div>
     </div>
@@ -53,7 +108,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 mt-8">
+  <footer class="text-center text-mk-sub text-xs py-6 mt-8 border-t border-mk-border tracking-widest uppercase">
     ACT &mdash; Prediction Market
   </footer>
 

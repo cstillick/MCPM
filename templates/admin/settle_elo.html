@@ -3,34 +3,33 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin/games/{{ game.id }}" class="text-sm text-gray-400 hover:text-gray-600">&larr; {{ game.name }}</a>
-  <h1 class="text-2xl font-extrabold text-gray-800">Settle ELO Markets</h1>
+  <a href="/admin/games/{{ game.id }}" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; {{ game.name }}</a>
+  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">Settle ELO Markets</h1>
 </div>
 
 <div class="max-w-lg">
-  <div class="bg-white rounded-xl shadow p-6">
-    <p class="text-sm text-gray-500 mb-5">
-      After importing the new ELO data, select whether each player <strong>gained</strong> or
-      <strong>lost</strong> ELO compared to before the game. This settles all ELO direction bets.
+  <div class="bg-mk-surface rounded-xl border border-mk-border p-6">
+    <p class="text-sm text-mk-sub mb-5">
+      After importing the new ELO data, select whether each player <strong class="text-mk-text">gained</strong> or
+      <strong class="text-mk-text">lost</strong> ELO compared to before the game. This settles all ELO direction bets.
     </p>
 
     {% if elo_markets %}
       <form method="post" action="/admin/games/{{ game.id }}/settle-elo-submit" class="space-y-4">
         {% for market in elo_markets %}
-          <!-- Extract player name from description -->
           {% set player_name = market.description.split('Will ')[1].split(' gain')[0] %}
-          <div class="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3">
-            <span class="font-semibold text-gray-700 text-sm">{{ player_name }}</span>
-            <div class="flex gap-3">
+          <div class="flex items-center justify-between border border-mk-border rounded-lg px-4 py-3">
+            <span class="font-semibold text-mk-text text-sm">{{ player_name }}</span>
+            <div class="flex gap-4">
               <label class="flex items-center gap-1.5 cursor-pointer">
                 <input type="radio" name="market_{{ market.id }}" value="Gain"
-                       class="accent-green-600" required />
-                <span class="text-sm font-medium text-green-700">Gain ↑</span>
+                       class="accent-[#30D158]" required />
+                <span class="text-sm font-medium text-mk-green">Gain ↑</span>
               </label>
               <label class="flex items-center gap-1.5 cursor-pointer">
                 <input type="radio" name="market_{{ market.id }}" value="Lose"
-                       class="accent-red-600" />
-                <span class="text-sm font-medium text-red-600">Lose ↓</span>
+                       class="accent-[#FF3824]" />
+                <span class="text-sm font-medium text-mk-red">Lose ↓</span>
               </label>
             </div>
           </div>
@@ -38,20 +37,20 @@
 
         <div class="mt-6 flex gap-3">
           <button type="submit"
-                  class="mk-red mk-red-hover text-white font-bold px-6 py-2.5 rounded-xl shadow transition">
+                  class="bg-mk-amber text-[#0A0A0B] font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
             Settle All &amp; Pay Out Winners
           </button>
           <a href="/admin/games/{{ game.id }}"
-             class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 py-2.5 rounded-xl transition">
+             class="bg-mk-surface border border-mk-border text-mk-text font-bold px-5 py-2.5 rounded-xl hover:border-mk-sub transition-colors">
             Cancel
           </a>
         </div>
       </form>
     {% else %}
-      <div class="text-center text-gray-400 py-8">
+      <div class="text-center py-8">
         <p class="text-3xl mb-2">✅</p>
-        <p class="font-semibold">All ELO markets are already settled.</p>
-        <a href="/admin/games/{{ game.id }}" class="text-blue-500 hover:underline text-sm mt-2 inline-block">
+        <p class="font-semibold text-mk-text">All ELO markets are already settled.</p>
+        <a href="/admin/games/{{ game.id }}" class="text-mk-amber hover:opacity-80 transition-opacity text-sm mt-2 inline-block">
           Back to game
         </a>
       </div>

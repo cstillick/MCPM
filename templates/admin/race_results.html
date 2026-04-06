@@ -3,13 +3,13 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin/games/{{ game.id }}" class="text-sm text-gray-400 hover:text-gray-600">&larr; {{ game.name }}</a>
-  <h1 class="text-2xl font-extrabold text-gray-800">Enter Race {{ race.race_number }} Results</h1>
+  <a href="/admin/games/{{ game.id }}" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; {{ game.name }}</a>
+  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">Enter Race {{ race.race_number }} Results</h1>
 </div>
 
 <div class="max-w-lg">
-  <div class="bg-white rounded-xl shadow p-6">
-    <p class="text-sm text-gray-500 mb-5">
+  <div class="bg-mk-surface rounded-xl border border-mk-border p-6">
+    <p class="text-sm text-mk-sub mb-5">
       Assign a placement (1–8) to each player. Each placement must be unique.
     </p>
 
@@ -18,9 +18,9 @@
       <div class="space-y-3">
         {% for player in players %}
           <div class="flex items-center gap-4">
-            <label class="flex-1 font-semibold text-gray-700 text-sm">{{ player.name }}</label>
+            <label class="flex-1 font-semibold text-mk-text text-sm">{{ player.name }}</label>
             <select name="player_{{ player.id }}" required
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-red-400">
+                    class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber">
               <option value="">—</option>
               {% for p in range(1, 9) %}
                 <option value="{{ p }}">{{ p }}{% if p == 1 %} 🥇{% elif p == 2 %} 🥈{% elif p == 3 %} 🥉{% endif %}</option>
@@ -32,18 +32,18 @@
 
       <div class="mt-6 flex gap-3">
         <button type="submit"
-                class="mk-red mk-red-hover text-white font-bold px-6 py-2.5 rounded-xl shadow transition">
+                class="bg-mk-amber text-[#0A0A0B] font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
           Submit Results &amp; Settle Markets
         </button>
         <a href="/admin/games/{{ game.id }}"
-           class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 py-2.5 rounded-xl transition">
+           class="bg-mk-surface border border-mk-border text-mk-text font-bold px-5 py-2.5 rounded-xl hover:border-mk-sub transition-colors">
           Cancel
         </a>
       </div>
     </form>
   </div>
 
-  <p class="text-xs text-gray-400 mt-3">
+  <p class="text-xs text-mk-sub mt-3">
     Submitting results will automatically settle all Race {{ race.race_number }} markets and credit winning bets.
   </p>
 </div>

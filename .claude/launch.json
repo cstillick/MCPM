@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "FastAPI (uvicorn)",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "uvicorn", "main:app", "--loop", "asyncio", "--http", "h11", "--port", "8000"],
+      "runtimeExecutable": "/Users/cstillick/.venvs/act_predictions/bin/uvicorn",
+      "runtimeArgs": ["main:app", "--loop", "asyncio", "--http", "h11", "--port", "8000"],
       "port": 8000
     }
   ]
