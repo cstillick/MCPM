@@ -1,3 +1,4 @@
+import os
 import re
 
 from fastapi import APIRouter, Depends, Form, Request, Response
@@ -44,12 +45,13 @@ def login(
         )
     token = create_access_token({"sub": user.username})
     resp = RedirectResponse("/", status_code=302)
+    is_secure = os.getenv("SECURE_COOKIES", "false").lower() == "true"
     resp.set_cookie(
         "access_token",
         token,
         httponly=True,
         samesite="lax",
-        secure=True,
+        secure=is_secure,
         max_age=60 * 60 * 24 * 7,  # 7 days
     )
     return resp

@@ -4,7 +4,7 @@
     {
       "name": "FastAPI (uvicorn)",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "uvicorn", "main:app", "--reload", "--port", "8000"],
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--loop", "asyncio", "--http", "h11", "--port", "8000"],
       "port": 8000
     }
   ]
