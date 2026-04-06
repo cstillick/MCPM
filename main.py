@@ -48,6 +48,11 @@ async def lifespan(app: FastAPI):
             conn.commit()
         except Exception:
             pass  # Column already exists
+        try:
+            conn.execute(text("ALTER TABLE games ADD COLUMN created_by_user_id INTEGER REFERENCES users(id)"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
     # Seed SiteSettings singleton if missing
     from database import SessionLocal
     from models import SiteSettings

@@ -63,13 +63,16 @@ class Game(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    # upcoming | live | completed
+    # upcoming | live | completed | cancelled
     status = Column(String, default="upcoming", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # NULL = created by admin; set for user-created games
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     teams = relationship("Team", back_populates="game", order_by="Team.id")
     races = relationship("Race", back_populates="game", order_by="Race.race_number")
     bet_markets = relationship("BetMarket", back_populates="game")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
 
 
 class Team(Base):

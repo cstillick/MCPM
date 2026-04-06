@@ -62,3 +62,15 @@ def require_admin(request: Request, db: Session = Depends(get_db)):
     if not user or not user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return user
+
+
+def require_game_access(request: Request, db: Session, game) -> "User":
+    """Allow access if the user is a site admin or the creator of the game."""
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Login required")
+    if user.is_admin:
+        return user
+    if game.created_by_user_id and game.created_by_user_id == user.id:
+        return user
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")

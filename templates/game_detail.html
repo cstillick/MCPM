@@ -8,12 +8,21 @@
     <a href="/" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; All Markets</a>
     <h1 class="text-2xl font-bold text-k-text mt-1">{{ game.name }}</h1>
   </div>
-  <span class="text-xs font-semibold px-3 py-1 rounded-full
-    {% if game.status == 'live' %}bg-k-yes/10 text-k-yes
-    {% elif game.status == 'upcoming' %}bg-k-bg text-k-sub border border-k-border
-    {% else %}bg-k-yes/10 text-k-yes{% endif %}">
-    {% if game.status == 'live' %}● LIVE{% elif game.status == 'upcoming' %}Upcoming{% else %}Completed{% endif %}
-  </span>
+  <div class="flex items-center gap-2">
+    {% if is_game_creator or (user and user.is_admin) %}
+      <a href="/admin/games/{{ game.id }}"
+         class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-k-accent/40 text-k-accent hover:bg-k-accent/10 transition-colors">
+        Manage
+      </a>
+    {% endif %}
+    <span class="text-xs font-semibold px-3 py-1 rounded-full
+      {% if game.status == 'live' %}bg-k-yes/10 text-k-yes
+      {% elif game.status == 'upcoming' %}bg-k-bg text-k-sub border border-k-border
+      {% elif game.status == 'cancelled' %}bg-k-no/10 text-k-no
+      {% else %}bg-k-yes/10 text-k-yes{% endif %}">
+      {% if game.status == 'live' %}● LIVE{% elif game.status == 'upcoming' %}Upcoming{% elif game.status == 'cancelled' %}Cancelled{% else %}Completed{% endif %}
+    </span>
+  </div>
 </div>
 
 <!-- Teams -->

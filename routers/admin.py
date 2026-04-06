@@ -8,7 +8,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, require_admin
+from auth import get_current_user, require_admin, require_game_access
 from database import get_db
 from datetime import datetime
 
@@ -257,10 +257,10 @@ def create_game(
 @router.get("/games/{game_id}/complete-confirm", response_class=HTMLResponse)
 def complete_game_confirm(game_id: int, request: Request, db: Session = Depends(get_db)):
     """Show a summary of what will happen when the game is marked completed."""
-    admin = require_admin(request, db)
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    admin = require_game_access(request, db, game)
     if game.status == "completed":
         return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
 
@@ -313,10 +313,10 @@ def set_game_status(
     new_status: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    require_admin(request, db)
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    require_game_access(request, db, game)
     if new_status not in ("upcoming", "live", "completed"):
         raise HTTPException(status_code=400, detail="Invalid status")
 
@@ -559,10 +559,10 @@ def create_over_under_market(
 
 @router.get("/games/{game_id}", response_class=HTMLResponse)
 def admin_game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
-    admin = require_admin(request, db)
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    user = require_game_access(request, db, game)
 
     pregame_markets = db.query(BetMarket).filter(
         BetMarket.game_id == game_id, BetMarket.race_id == None
@@ -575,14 +575,17 @@ def admin_game_detail(game_id: int, request: Request, db: Session = Depends(get_
         .all()
     )
 
+    is_game_creator = (not user.is_admin and game.created_by_user_id == user.id)
+
     return templates.TemplateResponse(
         "admin/game_detail.html",
         {
             "request": request,
-            "user": admin,
+            "user": user,
             "game": game,
             "pregame_markets": pregame_markets,
             "p2p_bets": p2p_bets,
+            "is_game_creator": is_game_creator,
         },
     )
 
@@ -624,6 +627,36 @@ def delete_game(request: Request, game_id: int, db: Session = Depends(get_db)):
     return RedirectResponse("/admin", status_code=302)
 
 
+@router.post("/games/{game_id}/cancel-game")
+def cancel_game(game_id: int, request: Request, db: Session = Depends(get_db)):
+    """Cancel a game: refund all bets, cancel P2P bets, mark game cancelled. Creator or admin."""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    require_game_access(request, db, game)
+    if game.status == "completed":
+        raise HTTPException(status_code=400, detail="Completed games cannot be cancelled")
+    if game.status == "cancelled":
+        raise HTTPException(status_code=400, detail="Game is already cancelled")
+
+    # Refund all house market bets
+    for market in game.bet_markets:
+        if market.status in ("open", "closed"):
+            _refund_market(db, market)
+
+    # Cancel all P2P bets for this game
+    p2p_bets = db.query(P2PBet).filter(
+        P2PBet.game_id == game_id,
+        P2PBet.status.in_(["open", "closed"]),
+    ).all()
+    for p2p_bet in p2p_bets:
+        _cancel_p2p_bet(db, p2p_bet)
+
+    game.status = "cancelled"
+    db.commit()
+    return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
+
+
 @router.post("/games/{game_id}/races/{race_id}/open-betting")
 def open_race_betting(
     game_id: int,
@@ -631,14 +664,15 @@ def open_race_betting(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    require_game_access(request, db, game)
     race = db.query(Race).filter(Race.id == race_id, Race.game_id == game_id).first()
     if not race:
         raise HTTPException(status_code=404, detail="Race not found")
     if race.status != "pending":
         raise HTTPException(status_code=400, detail="Race is not in pending status")
-
-    game = db.query(Game).filter(Game.id == game_id).first()
 
     # Create per-race markets
     # 1. Race winner (who gets 1st place)
@@ -672,12 +706,14 @@ def race_results_page(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    admin = require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    user = require_game_access(request, db, game)
     race = db.query(Race).filter(Race.id == race_id, Race.game_id == game_id).first()
     if not race:
         raise HTTPException(status_code=404, detail="Race not found")
 
-    game = db.query(Game).filter(Game.id == game_id).first()
     players_in_game = []
     for team in game.teams:
         players_in_game.extend([team.player1, team.player2])
@@ -686,7 +722,7 @@ def race_results_page(
         "admin/race_results.html",
         {
             "request": request,
-            "user": admin,
+            "user": user,
             "game": game,
             "race": race,
             "players": players_in_game,
@@ -701,12 +737,14 @@ async def submit_race_results(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    require_game_access(request, db, game)
     race = db.query(Race).filter(Race.id == race_id, Race.game_id == game_id).first()
     if not race:
         raise HTTPException(status_code=404, detail="Race not found")
 
-    game = db.query(Game).filter(Game.id == game_id).first()
     players_in_game = []
     for team in game.teams:
         players_in_game.extend([team.player1, team.player2])
@@ -1276,10 +1314,10 @@ def settle_elo_markets(
 
 @router.get("/games/{game_id}/settle-elo-form", response_class=HTMLResponse)
 def settle_elo_form(game_id: int, request: Request, db: Session = Depends(get_db)):
-    admin = require_admin(request, db)
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    user = require_game_access(request, db, game)
 
     elo_markets = db.query(BetMarket).filter(
         BetMarket.game_id == game_id,
@@ -1289,16 +1327,16 @@ def settle_elo_form(game_id: int, request: Request, db: Session = Depends(get_db
 
     return templates.TemplateResponse(
         "admin/settle_elo.html",
-        {"request": request, "user": admin, "game": game, "elo_markets": elo_markets},
+        {"request": request, "user": user, "game": game, "elo_markets": elo_markets},
     )
 
 
 @router.post("/games/{game_id}/settle-elo-submit")
 async def settle_elo_submit(game_id: int, request: Request, db: Session = Depends(get_db)):
-    require_admin(request, db)
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    require_game_access(request, db, game)
 
     form = await request.form()
 

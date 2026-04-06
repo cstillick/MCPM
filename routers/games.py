@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import Bet, BetMarket, BetOption, Game, P2PBet, P2PBetEntry, Race, RaceResult, SiteSettings
+from models import Bet, BetMarket, BetOption, Game, P2PBet, P2PBetEntry, Player, Race, RaceResult, SiteSettings, Team
 from template_env import templates
 
 router = APIRouter()
@@ -57,6 +57,8 @@ def index(request: Request, db: Session = Depends(get_db)):
     upcoming = db.query(Game).filter(Game.status == "upcoming").order_by(Game.created_at.desc()).all()
     live = db.query(Game).filter(Game.status == "live").order_by(Game.created_at.desc()).all()
     completed = db.query(Game).filter(Game.status == "completed").order_by(Game.created_at.desc()).all()
+    settings = db.query(SiteSettings).first()
+    p2p_enabled = bool(settings and settings.p2p_betting_enabled)
     return templates.TemplateResponse(
         "index.html",
         {
@@ -65,8 +67,121 @@ def index(request: Request, db: Session = Depends(get_db)):
             "upcoming": upcoming,
             "live": live,
             "completed": completed,
+            "p2p_enabled": p2p_enabled,
         },
     )
+
+
+@router.get("/games/create", response_class=HTMLResponse)
+def user_create_game_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+    settings = db.query(SiteSettings).first()
+    if not (settings and settings.p2p_betting_enabled):
+        raise HTTPException(status_code=403, detail="Game creation requires P2P betting to be enabled")
+    players = db.query(Player).filter(Player.retired == False).order_by(Player.elo.desc()).all()
+    return templates.TemplateResponse(
+        "game_form.html",
+        {"request": request, "user": user, "players": players},
+    )
+
+
+@router.post("/games/create")
+def user_create_game(
+    request: Request,
+    game_name: str = Form(...),
+    team1_name: str = Form(...),
+    team1_p1: int = Form(...),
+    team1_p2: int = Form(...),
+    team2_name: str = Form(...),
+    team2_p1: int = Form(...),
+    team2_p2: int = Form(...),
+    team3_name: str = Form(...),
+    team3_p1: int = Form(...),
+    team3_p2: int = Form(...),
+    team4_name: str = Form(...),
+    team4_p1: int = Form(...),
+    team4_p2: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+    settings = db.query(SiteSettings).first()
+    if not (settings and settings.p2p_betting_enabled):
+        raise HTTPException(status_code=403, detail="Game creation requires P2P betting to be enabled")
+
+    game = Game(name=game_name, status="upcoming", created_by_user_id=user.id)
+    db.add(game)
+    db.flush()
+
+    team_data = [
+        (team1_name, team1_p1, team1_p2),
+        (team2_name, team2_p1, team2_p2),
+        (team3_name, team3_p1, team3_p2),
+        (team4_name, team4_p1, team4_p2),
+    ]
+
+    all_player_ids = [pid for _, p1, p2 in team_data for pid in (p1, p2)]
+    if len(all_player_ids) != len(set(all_player_ids)):
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Each player can only be on one team")
+
+    teams = []
+    for name, p1_id, p2_id in team_data:
+        p1 = db.query(Player).filter(Player.id == p1_id).first()
+        p2 = db.query(Player).filter(Player.id == p2_id).first()
+        if not p1 or not p2:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Invalid player ID")
+        team = Team(game_id=game.id, name=name, player1_id=p1_id, player2_id=p2_id,
+                    average_elo=(p1.elo + p2.elo) / 2.0)
+        db.add(team)
+        teams.append((team, p1, p2))
+
+    db.flush()
+
+    for i in range(1, 17):
+        db.add(Race(game_id=game.id, race_number=i, status="pending"))
+
+    db.flush()
+
+    # Team win market
+    from models import BetMarket as _BM, BetOption as _BO
+    team_win_market = _BM(game_id=game.id, race_id=None, market_type="team_win",
+                          description="Which team wins the game?", status="open")
+    db.add(team_win_market)
+    db.flush()
+    for team, _, _ in teams:
+        db.add(_BO(market_id=team_win_market.id, label=team.name))
+
+    # ELO direction markets
+    seen = set()
+    for team, p1, p2 in teams:
+        for player in (p1, p2):
+            if player.id in seen:
+                continue
+            seen.add(player.id)
+            m = _BM(game_id=game.id, race_id=None, market_type="elo_direction",
+                    description=f"Will {player.name} gain or lose ELO?", status="open")
+            db.add(m)
+            db.flush()
+            db.add(_BO(market_id=m.id, label="Gain"))
+            db.add(_BO(market_id=m.id, label="Lose"))
+
+    # Shirt swap markets
+    for team, _, _ in teams:
+        m = _BM(game_id=game.id, race_id=None, market_type="shirt_swap",
+                description=f"Will {team.name} shirt swap? (top 2 teams by total points)",
+                status="open")
+        db.add(m)
+        db.flush()
+        db.add(_BO(market_id=m.id, label="Yes"))
+        db.add(_BO(market_id=m.id, label="No"))
+
+    db.commit()
+    return RedirectResponse(f"/games/{game.id}", status_code=302)
 
 
 @router.get("/games/{game_id}", response_class=HTMLResponse)
@@ -143,6 +258,7 @@ def game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
             "p2p_enabled": p2p_enabled,
             "p2p_bets": p2p_bets,
             "user_p2p_entry_bet_ids": user_p2p_entry_bet_ids,
+            "is_game_creator": bool(user and game.created_by_user_id == user.id),
         },
     )
 

@@ -4,6 +4,12 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold text-k-text">Markets</h1>
+  {% if p2p_enabled and user %}
+    <a href="/games/create"
+       class="text-sm font-semibold px-4 py-2 rounded-lg bg-k-accent/10 border border-k-accent/30 text-k-accent hover:bg-k-accent/20 transition-colors">
+      + Create Game
+    </a>
+  {% endif %}
 </div>
 
 {% if not user %}
