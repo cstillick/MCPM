@@ -16,20 +16,30 @@
 <!-- Game status controls -->
 <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-4 mb-6 flex flex-wrap gap-2 items-center">
   <span class="text-sm font-semibold text-k-sub mr-2">Change status:</span>
-  {% for status in ['upcoming', 'live', 'completed'] %}
+  {% for status in ['upcoming', 'live'] %}
     <form method="post" action="/admin/games/{{ game.id }}/set-status" class="inline">
       <input type="hidden" name="new_status" value="{{ status }}" />
       <button type="submit"
               class="text-sm font-semibold px-4 py-1.5 rounded-lg border transition-colors
               {% if game.status == status %}border-k-border text-k-sub cursor-default opacity-50
               {% elif status == 'live' %}border-k-yes text-k-yes hover:bg-k-yes/10
-              {% elif status == 'completed' %}border-k-accent text-k-accent hover:bg-k-accent/10
               {% else %}border-k-border text-k-sub hover:text-k-text{% endif %}"
               {% if game.status == status %}disabled{% endif %}>
         {{ status | capitalize }}
       </button>
     </form>
   {% endfor %}
+  {% if game.status == 'completed' %}
+    <button disabled
+            class="text-sm font-semibold px-4 py-1.5 rounded-lg border border-k-border text-k-sub cursor-default opacity-50">
+      Completed
+    </button>
+  {% else %}
+    <a href="/admin/games/{{ game.id }}/complete-confirm"
+       class="text-sm font-semibold px-4 py-1.5 rounded-lg border border-k-accent text-k-accent hover:bg-k-accent/10 transition-colors">
+      Completed
+    </a>
+  {% endif %}
   <a href="/games/{{ game.id }}" class="ml-auto text-sm text-k-accent hover:underline">View public page &rarr;</a>
   {% if game.status == "upcoming" %}
   <div x-data="{ confirm: false }">

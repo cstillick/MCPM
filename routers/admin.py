@@ -253,6 +253,58 @@ def create_game(
 
 # ── Game status management ────────────────────────────────────────────────────
 
+@router.get("/games/{game_id}/complete-confirm", response_class=HTMLResponse)
+def complete_game_confirm(game_id: int, request: Request, db: Session = Depends(get_db)):
+    """Show a summary of what will happen when the game is marked completed."""
+    admin = require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if game.status == "completed":
+        return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
+
+    unsettled = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    # Build summary rows
+    summary = []
+    for market in unsettled:
+        bet_count = len(market.bets)
+        coins_at_stake = sum(b.coins_wagered for b in market.bets)
+        if market.market_type in ("shirt_swap", "over_under", "team_win", "elo_direction"):
+            action = "Auto-settle"
+            action_class = "text-mk-green"
+        else:
+            action = "Refund"
+            action_class = "text-mk-amber"
+        summary.append({
+            "market": market,
+            "bet_count": bet_count,
+            "coins_at_stake": coins_at_stake,
+            "action": action,
+            "action_class": action_class,
+        })
+
+    total_refund_coins = sum(
+        r["coins_at_stake"] for r in summary if r["action"] == "Refund"
+    )
+    has_elo = any(m.market_type == "elo_direction" for m in unsettled)
+
+    return templates.TemplateResponse(
+        "admin/complete_confirm.html",
+        {
+            "request": request,
+            "user": admin,
+            "game": game,
+            "summary": summary,
+            "total_refund_coins": total_refund_coins,
+            "has_elo": has_elo,
+        },
+    )
+
+
 @router.post("/games/{game_id}/set-status")
 def set_game_status(
     game_id: int,
@@ -286,7 +338,15 @@ def set_game_status(
 
 
 def _settle_game_completion_markets(game_id: int, db: Session):
-    """Settle shirt_swap and over_under markets when a game is marked completed."""
+    """Settle all open/closed markets when a game is marked completed.
+
+    - shirt_swap: settled by top-2 teams by points
+    - over_under: settled by actual vs. threshold
+    - team_win: settled by team with highest total points
+    - elo_direction: settled by placeholder ELO formula (individual points vs. median)
+    - race_winner (unsettled): refunded
+    - any remaining unsettled markets: refunded
+    """
     game = db.query(Game).filter(Game.id == game_id).first()
     if not game:
         return
@@ -357,6 +417,87 @@ def _settle_game_completion_markets(game_id: int, db: Session):
         market.winning_outcome = winning_label
         market.status = "settled"
         _settle_market(db, market, winning_label)
+
+    # Settle team_win markets — team with the highest total points wins
+    team_win_markets = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.market_type == "team_win",
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    for market in team_win_markets:
+        if not sorted_teams:
+            _refund_market(db, market)
+            continue
+        # Find the team name with the most points that also exists as a BetOption
+        option_labels = {o.label for o in market.options}
+        winning_team_name = None
+        for team_id, _ in sorted_teams:
+            team = next((t for t in game.teams if t.id == team_id), None)
+            if team and team.name in option_labels:
+                winning_team_name = team.name
+                break
+        if winning_team_name:
+            market.winning_outcome = winning_team_name
+            market.status = "settled"
+            _settle_market(db, market, winning_team_name)
+        else:
+            _refund_market(db, market)
+
+    # Settle elo_direction markets using a placeholder ELO formula.
+    # TODO: Replace with actual ELO formula when provided.
+    # Placeholder: players scoring >= median game points → "Gain", others → "Lose".
+    elo_markets = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.market_type == "elo_direction",
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    if elo_markets:
+        point_values = sorted(player_points.values())
+        median_pts = point_values[len(point_values) // 2] if point_values else 0
+
+        # Build a name→player_id map for lookup
+        name_to_player_id = {}
+        for team in game.teams:
+            for player in (team.player1, team.player2):
+                name_to_player_id[player.name] = player.id
+
+        for market in elo_markets:
+            # Description format: "Will {player.name} gain or lose ELO?"
+            try:
+                player_name = market.description.split("Will ")[1].split(" gain or lose")[0]
+            except IndexError:
+                _refund_market(db, market)
+                continue
+            player_id = name_to_player_id.get(player_name)
+            if player_id is None:
+                _refund_market(db, market)
+                continue
+            pts = player_points.get(player_id, 0)
+            winning_label = "Gain" if pts >= median_pts else "Lose"
+            market.winning_outcome = winning_label
+            market.status = "settled"
+            _settle_market(db, market, winning_label)
+
+    # Refund unsettled race_winner markets (races that were never completed)
+    unsettled_race_markets = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.market_type == "race_winner",
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    for market in unsettled_race_markets:
+        _refund_market(db, market)
+
+    # Safety net: refund any other remaining unsettled markets
+    remaining = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    for market in remaining:
+        _refund_market(db, market)
 
 
 # ── Over/Under market creation ────────────────────────────────────────────────
@@ -674,6 +815,21 @@ def _settle_market(db: Session, market: BetMarket, winning_label: str):
             if txn:
                 txn.type = "lost"
                 txn.settled_at = now
+
+
+def _refund_market(db: Session, market: BetMarket):
+    """Return all wagered coins to bettors; mark market settled with outcome 'refunded'."""
+    now = datetime.utcnow()
+    for bet in market.bets:
+        bet.payout = bet.coins_wagered
+        bet.user.coin_balance += bet.coins_wagered
+        txn = db.query(CoinTransaction).filter(CoinTransaction.bet_id == bet.id).first()
+        if txn:
+            txn.type = "refunded"
+            txn.net_amount = 0
+            txn.settled_at = now
+    market.status = "settled"
+    market.winning_outcome = "refunded"
 
 
 # ── ELO import ────────────────────────────────────────────────────────────────
