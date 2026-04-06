@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import Bet, BetMarket, BetOption, Game, Race, RaceResult
+from models import Bet, BetMarket, BetOption, Game, P2PBet, P2PBetEntry, Race, RaceResult, SiteSettings
 from template_env import templates
 
 router = APIRouter()
@@ -108,6 +108,27 @@ def game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
 
     price_histories = {m.id: compute_price_history(m) for m in pregame_markets}
 
+    # P2P exchange
+    settings = db.query(SiteSettings).first()
+    p2p_enabled = bool(settings and settings.p2p_betting_enabled)
+    p2p_bets = []
+    user_p2p_entry_bet_ids = set()
+    if p2p_enabled:
+        p2p_bets = (
+            db.query(P2PBet)
+            .filter(P2PBet.game_id == game_id, P2PBet.status == "open")
+            .order_by(P2PBet.created_at.desc())
+            .all()
+        )
+        if user:
+            joined = (
+                db.query(P2PBetEntry.p2p_bet_id)
+                .filter(P2PBetEntry.user_id == user.id)
+                .filter(P2PBetEntry.p2p_bet_id.in_([b.id for b in p2p_bets]))
+                .all()
+            )
+            user_p2p_entry_bet_ids = {row[0] for row in joined}
+
     return templates.TemplateResponse(
         "game_detail.html",
         {
@@ -119,6 +140,9 @@ def game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
             "win_probs": win_probs,
             "community_probs": community_probs,
             "price_histories": price_histories,
+            "p2p_enabled": p2p_enabled,
+            "p2p_bets": p2p_bets,
+            "user_p2p_entry_bet_ids": user_p2p_entry_bet_ids,
         },
     )
 

@@ -185,3 +185,52 @@ class Bet(Base):
     user = relationship("User", back_populates="bets")
     market = relationship("BetMarket", back_populates="bets")
     option = relationship("BetOption", back_populates="bets")
+
+
+class SiteSettings(Base):
+    __tablename__ = "site_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    p2p_betting_enabled = Column(Boolean, default=False, nullable=False)
+
+
+class P2PBet(Base):
+    __tablename__ = "p2p_bets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
+    race_id = Column(Integer, ForeignKey("races.id"), nullable=True)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # team_win | race_winner | free_form
+    market_type = Column(String, nullable=False)
+    description = Column(String, nullable=False)  # stated from FOR perspective
+    # open | closed | settled | cancelled
+    status = Column(String, default="open", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    closed_at = Column(DateTime, nullable=True)
+    settled_at = Column(DateTime, nullable=True)
+    # for | against | cancelled — set when resolved
+    winning_side = Column(String, nullable=True)
+
+    game = relationship("Game", backref="p2p_bets")
+    race = relationship("Race", backref="p2p_bets")
+    creator = relationship("User", foreign_keys=[creator_id], backref="created_p2p_bets")
+    entries = relationship("P2PBetEntry", back_populates="p2p_bet", cascade="all, delete-orphan")
+
+
+class P2PBetEntry(Base):
+    __tablename__ = "p2p_bet_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    p2p_bet_id = Column(Integer, ForeignKey("p2p_bets.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # for | against
+    side = Column(String, nullable=False)
+    coins_locked = Column(Integer, nullable=False)
+    payout = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    coin_transaction_id = Column(Integer, ForeignKey("coin_transactions.id"), nullable=True)
+
+    p2p_bet = relationship("P2PBet", back_populates="entries")
+    user = relationship("User", foreign_keys=[user_id], backref="p2p_entries")
+    coin_transaction = relationship("CoinTransaction", foreign_keys=[coin_transaction_id])

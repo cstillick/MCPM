@@ -190,6 +190,143 @@
     </div>
   {% endif %}
 </section>
+
+{% if p2p_enabled and user %}
+<!-- P2P Exchange -->
+<section class="mb-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest">P2P Exchange</h2>
+    {% if game.status != 'completed' %}
+    <div x-data="{ open: false }" class="relative">
+      <button @click="open = !open"
+              class="text-sm bg-k-accent/10 hover:bg-k-accent/20 text-k-accent font-semibold px-4 py-1.5 rounded-lg border border-k-accent/30 transition-colors">
+        + Propose Bet
+      </button>
+      <!-- Create P2P Bet Form -->
+      <div x-show="open" x-cloak
+           class="absolute right-0 top-10 z-20 w-80 bg-k-surface rounded-xl border border-k-border shadow-card p-4"
+           x-data="{ type: 'team_win' }"
+           @click.outside="open = false">
+        <p class="font-semibold text-k-text text-sm mb-3">Propose a P2P Bet</p>
+        <form method="post" action="/p2p/create" class="space-y-3">
+          <input type="hidden" name="game_id" value="{{ game.id }}" />
+
+          <div>
+            <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Type</label>
+            <select name="market_type" x-model="type"
+                    class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+              <option value="team_win">Team Win</option>
+              <option value="race_winner">Race Winner</option>
+              <option value="free_form">Custom Proposition</option>
+            </select>
+          </div>
+
+          <div x-show="type === 'race_winner'">
+            <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Race</label>
+            <select name="race_id"
+                    class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+              {% for race in game.races %}
+                <option value="{{ race.id }}">Race {{ race.race_number }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">
+              Proposition (FOR side bets this is true)
+            </label>
+            <input type="text" name="description" required maxlength="200"
+                   x-bind:placeholder="type === 'team_win' ? 'e.g. Team Alpha will win the game' : type === 'race_winner' ? 'e.g. John will win Race 5' : 'e.g. John finishes top 3 in Race 8'"
+                   class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">
+              Your Stake (FOR side) — 🪙 balance: {{ user.coin_balance }}
+            </label>
+            <input type="number" name="coins_wagered" min="1" max="{{ user.coin_balance }}" value="50" required
+                   class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-xs w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
+          </div>
+
+          <button type="submit"
+                  class="w-full bg-k-accent text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors text-sm">
+            Propose Bet
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Open P2P Bets -->
+  {% if p2p_bets %}
+    <div class="grid gap-3 sm:grid-cols-2">
+      {% for bet in p2p_bets %}
+        {% set for_pool = bet.entries | selectattr('side', 'equalto', 'for') | sum(attribute='coins_locked') %}
+        {% set against_pool = bet.entries | selectattr('side', 'equalto', 'against') | sum(attribute='coins_locked') %}
+        {% set user_joined = bet.id in user_p2p_entry_bet_ids %}
+        <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-4">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-k-text leading-tight">{{ bet.description }}</p>
+              <p class="text-xs text-k-sub mt-0.5">by {{ bet.creator.username }} · {{ bet.market_type | replace('_', ' ') }}</p>
+            </div>
+            {% if user_joined %}
+              <span class="text-xs font-semibold text-k-yes bg-k-yes/10 px-2 py-0.5 rounded-full shrink-0">Joined</span>
+            {% endif %}
+          </div>
+
+          <!-- Pool display -->
+          <div class="flex gap-3 text-xs mb-3">
+            <div class="flex-1 bg-k-yes/5 border border-k-yes/20 rounded-lg px-3 py-1.5 text-center">
+              <div class="text-k-sub font-semibold uppercase tracking-wide text-[10px]">For</div>
+              <div class="text-k-yes font-bold">🪙 {{ for_pool }}</div>
+            </div>
+            <div class="flex-1 bg-k-no/5 border border-k-no/20 rounded-lg px-3 py-1.5 text-center">
+              <div class="text-k-sub font-semibold uppercase tracking-wide text-[10px]">Against</div>
+              <div class="text-k-no font-bold">🪙 {{ against_pool }}</div>
+            </div>
+          </div>
+
+          <!-- Join form or cancel button -->
+          {% if not user_joined and bet.creator_id != user.id %}
+            <div x-data="{ side: 'against', amount: 50 }">
+              <form method="post" action="/p2p/{{ bet.id }}/join" class="flex gap-2 items-end">
+                <div class="flex-1">
+                  <label class="block text-[10px] font-semibold text-k-sub mb-1 uppercase tracking-wide">Side</label>
+                  <select name="side" x-model="side"
+                          class="bg-k-bg border border-k-border text-k-text rounded-lg px-2 py-1.5 text-xs w-full focus:ring-1 focus:ring-k-accent/30">
+                    <option value="for">FOR</option>
+                    <option value="against" selected>AGAINST</option>
+                  </select>
+                </div>
+                <div class="flex-1">
+                  <label class="block text-[10px] font-semibold text-k-sub mb-1 uppercase tracking-wide">🪙 Stake</label>
+                  <input type="number" name="coins_wagered" x-model="amount" min="1" max="{{ user.coin_balance }}" required
+                         class="bg-k-bg border border-k-border text-k-text rounded-lg px-2 py-1.5 text-xs w-full focus:ring-1 focus:ring-k-accent/30" />
+                </div>
+                <button type="submit" :disabled="amount < 1"
+                        class="bg-k-accent text-white font-semibold px-3 py-1.5 rounded-lg text-xs hover:bg-indigo-600 transition-colors shrink-0">
+                  Join
+                </button>
+              </form>
+            </div>
+          {% elif not user_joined and bet.creator_id == user.id %}
+            <!-- Proposer can only cancel their own bet -->
+            <form method="post" action="/p2p/{{ bet.id }}/cancel">
+              <button type="submit" class="text-xs text-k-no hover:underline">Cancel &amp; Refund</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-6 text-center text-k-sub text-sm">
+      No open P2P bets yet. Be the first to propose one!
+    </div>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

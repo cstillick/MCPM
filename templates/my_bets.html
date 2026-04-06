@@ -90,4 +90,74 @@
     <p class="text-sm mt-1 text-k-sub">Head to an <a href="/" class="text-k-accent hover:underline">upcoming game</a> to place your first bet!</p>
   </div>
 {% endif %}
+
+<!-- P2P Entries -->
+{% if p2p_entries %}
+<section class="mt-8">
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">P2P Exchange Entries</h2>
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-k-border bg-k-bg">
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Proposition</th>
+          <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">My Side</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Staked</th>
+          <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Result</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Payout</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in p2p_entries %}
+          <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+            <td class="px-4 py-3">
+              <a href="/games/{{ entry.p2p_bet.game_id }}" class="text-k-accent hover:underline font-medium">
+                {{ entry.p2p_bet.description | truncate(60) }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full
+                {% if entry.side == 'for' %}bg-k-yes/10 text-k-yes{% else %}bg-k-no/10 text-k-no{% endif %}">
+                {{ entry.side | upper }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right text-k-sub">🪙 {{ entry.coins_locked }}</td>
+            <td class="px-4 py-3 text-center">
+              {% set status = entry.p2p_bet.status %}
+              {% set winning = entry.p2p_bet.winning_side %}
+              {% if status == 'settled' %}
+                {% if winning == entry.side %}
+                  <span class="text-k-yes font-semibold text-xs bg-k-yes/10 px-2 py-0.5 rounded-full">Won</span>
+                {% elif winning == 'cancelled' %}
+                  <span class="text-k-sub font-semibold text-xs bg-k-bg px-2 py-0.5 rounded-full border border-k-border">Refunded</span>
+                {% else %}
+                  <span class="text-k-no font-semibold text-xs bg-k-no/10 px-2 py-0.5 rounded-full">Lost</span>
+                {% endif %}
+              {% elif status == 'cancelled' %}
+                <span class="text-k-sub font-semibold text-xs bg-k-bg px-2 py-0.5 rounded-full border border-k-border">Refunded</span>
+              {% else %}
+                <span class="text-k-accent font-semibold text-xs bg-k-accent/10 px-2 py-0.5 rounded-full">Open</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-semibold">
+              {% if entry.payout is not none %}
+                {% if entry.payout > entry.coins_locked %}
+                  <span class="text-k-yes">+🪙 {{ entry.payout }}</span>
+                {% elif entry.payout == entry.coins_locked %}
+                  <span class="text-k-sub">🪙 {{ entry.payout }}</span>
+                {% elif entry.payout > 0 %}
+                  <span class="text-k-sub">🪙 {{ entry.payout }}</span>
+                {% else %}
+                  <span class="text-k-sub">—</span>
+                {% endif %}
+              {% else %}
+                <span class="text-k-sub">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

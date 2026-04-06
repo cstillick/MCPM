@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user, require_login
 from database import get_db
-from models import Bet, BetMarket, BetOption, CoinTransaction, Game, User
+from models import Bet, BetMarket, BetOption, CoinTransaction, Game, P2PBetEntry, User
 from template_env import templates
 
 router = APIRouter()
@@ -28,6 +28,13 @@ def my_bets(request: Request, db: Session = Depends(get_db)):
     won = [b for b in settled if b.payout and b.payout > 0]
     total_payout = sum(b.payout for b in settled if b.payout)
 
+    p2p_entries = (
+        db.query(P2PBetEntry)
+        .filter(P2PBetEntry.user_id == user.id)
+        .order_by(P2PBetEntry.created_at.desc())
+        .all()
+    )
+
     return templates.TemplateResponse(
         "my_bets.html",
         {
@@ -37,6 +44,7 @@ def my_bets(request: Request, db: Session = Depends(get_db)):
             "total_wagered": total_wagered,
             "total_payout": total_payout,
             "bets_won": len(won),
+            "p2p_entries": p2p_entries,
         },
     )
 

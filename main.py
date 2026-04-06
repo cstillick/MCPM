@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
 from database import Base, engine
 from limiter import limiter
-from routers import auth, games, players, bets, admin, transactions
+from routers import auth, games, players, bets, admin, transactions, p2p
 
 
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
@@ -48,6 +48,13 @@ async def lifespan(app: FastAPI):
             conn.commit()
         except Exception:
             pass  # Column already exists
+    # Seed SiteSettings singleton if missing
+    from database import SessionLocal
+    from models import SiteSettings
+    with SessionLocal() as db:
+        if not db.query(SiteSettings).first():
+            db.add(SiteSettings())
+            db.commit()
     yield
 
 
@@ -67,3 +74,4 @@ app.include_router(players.router)
 app.include_router(bets.router)
 app.include_router(admin.router)
 app.include_router(transactions.router)
+app.include_router(p2p.router)

@@ -14,7 +14,8 @@ from datetime import datetime
 
 from models import (
     Bet, BetMarket, BetOption, CoinTransaction, Game, HeadToHead,
-    PendingRegistration, Player, Race, RaceResult, Team, User,
+    P2PBet, P2PBetEntry, PendingRegistration, Player, Race, RaceResult,
+    SiteSettings, Team, User,
 )
 from auth import hash_password
 from template_env import templates
@@ -331,6 +332,7 @@ def set_game_status(
 
     if new_status == "completed":
         _settle_game_completion_markets(game_id, db)
+        _auto_settle_p2p_for_game(game, db)
 
     game.status = new_status
     db.commit()
@@ -566,6 +568,13 @@ def admin_game_detail(game_id: int, request: Request, db: Session = Depends(get_
         BetMarket.game_id == game_id, BetMarket.race_id == None
     ).all()
 
+    p2p_bets = (
+        db.query(P2PBet)
+        .filter(P2PBet.game_id == game_id)
+        .order_by(P2PBet.created_at.desc())
+        .all()
+    )
+
     return templates.TemplateResponse(
         "admin/game_detail.html",
         {
@@ -573,6 +582,7 @@ def admin_game_detail(game_id: int, request: Request, db: Session = Depends(get_
             "user": admin,
             "game": game,
             "pregame_markets": pregame_markets,
+            "p2p_bets": p2p_bets,
         },
     )
 
@@ -744,6 +754,8 @@ async def submit_race_results(
             market.status = "settled"
             _settle_market(db, market, winning_label)
 
+    _auto_settle_p2p_for_race(race, winner_player, db)
+
     race.status = "completed"
     db.commit()
     return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
@@ -830,6 +842,185 @@ def _refund_market(db: Session, market: BetMarket):
             txn.settled_at = now
     market.status = "settled"
     market.winning_outcome = "refunded"
+
+
+# ── P2P bet helpers ───────────────────────────────────────────────────────────
+
+def _settle_p2p_bet(db: Session, p2p_bet: P2PBet, winning_side: str) -> None:
+    """Distribute 1:1 exchange payouts; return unmatched coins."""
+    entries = p2p_bet.entries
+    for_pool = sum(e.coins_locked for e in entries if e.side == "for")
+    against_pool = sum(e.coins_locked for e in entries if e.side == "against")
+    matched = min(for_pool, against_pool)
+    now = datetime.utcnow()
+
+    if matched == 0:
+        # No opposing side — cancel and refund everyone
+        _cancel_p2p_bet(db, p2p_bet)
+        return
+
+    for entry in entries:
+        pool = for_pool if entry.side == "for" else against_pool
+        my_matched = int((entry.coins_locked / pool) * matched) if pool > 0 else 0
+        my_unmatched = entry.coins_locked - my_matched
+
+        if entry.side == winning_side:
+            entry.payout = my_matched * 2 + my_unmatched
+        else:
+            entry.payout = my_unmatched
+
+        entry.user.coin_balance += entry.payout
+
+        if entry.coin_transaction_id:
+            txn = db.get(CoinTransaction, entry.coin_transaction_id)
+            if txn:
+                if entry.payout > entry.coins_locked:
+                    txn.type = "won"
+                elif entry.payout < entry.coins_locked:
+                    txn.type = "lost"
+                else:
+                    txn.type = "refunded"
+                txn.net_amount = entry.payout - entry.coins_locked
+                txn.settled_at = now
+
+    p2p_bet.status = "settled"
+    p2p_bet.winning_side = winning_side
+    p2p_bet.settled_at = now
+
+
+def _cancel_p2p_bet(db: Session, p2p_bet: P2PBet) -> None:
+    """Refund all entries and mark bet cancelled."""
+    now = datetime.utcnow()
+    for entry in p2p_bet.entries:
+        entry.payout = entry.coins_locked
+        entry.user.coin_balance += entry.coins_locked
+        if entry.coin_transaction_id:
+            txn = db.get(CoinTransaction, entry.coin_transaction_id)
+            if txn:
+                txn.type = "refunded"
+                txn.net_amount = 0
+                txn.settled_at = now
+    p2p_bet.status = "cancelled"
+    p2p_bet.winning_side = "cancelled"
+    p2p_bet.closed_at = now
+    p2p_bet.settled_at = now
+
+
+def _auto_settle_p2p_for_game(game: Game, db: Session) -> None:
+    """Auto-settle/cancel P2P bets tied to this game when it completes."""
+    open_bets = db.query(P2PBet).filter(
+        P2PBet.game_id == game.id,
+        P2PBet.status.in_(["open", "closed"]),
+    ).all()
+
+    # Determine winning team name by points
+    team_points = _get_team_points(game.id, db)
+    sorted_teams = sorted(team_points.items(), key=lambda x: x[1], reverse=True)
+    winning_team_id = sorted_teams[0][0] if sorted_teams else None
+    winning_team_name = None
+    if winning_team_id:
+        winning_team = next((t for t in game.teams if t.id == winning_team_id), None)
+        if winning_team:
+            winning_team_name = winning_team.name
+
+    for bet in open_bets:
+        if bet.market_type == "team_win" and winning_team_name:
+            # FOR = the winning team is described in the description
+            # We settle FOR if the description mentions the winning team name
+            if winning_team_name.lower() in bet.description.lower():
+                _settle_p2p_bet(db, bet, "for")
+            else:
+                _settle_p2p_bet(db, bet, "against")
+        else:
+            # race_winner bets with no race association, free_form, or undetermined — cancel
+            _cancel_p2p_bet(db, bet)
+
+
+def _auto_settle_p2p_for_race(race: Race, winner_player, db: Session) -> None:
+    """Auto-settle/cancel P2P race_winner bets when a race completes."""
+    open_bets = db.query(P2PBet).filter(
+        P2PBet.race_id == race.id,
+        P2PBet.market_type == "race_winner",
+        P2PBet.status.in_(["open", "closed"]),
+    ).all()
+
+    for bet in open_bets:
+        # FOR = the winner_player name is mentioned in the description
+        if winner_player.name.lower() in bet.description.lower():
+            _settle_p2p_bet(db, bet, "for")
+        else:
+            _settle_p2p_bet(db, bet, "against")
+
+    # Cancel any remaining open race bets for this race (non-race_winner types)
+    other_open = db.query(P2PBet).filter(
+        P2PBet.race_id == race.id,
+        P2PBet.market_type != "race_winner",
+        P2PBet.status.in_(["open", "closed"]),
+    ).all()
+    for bet in other_open:
+        _cancel_p2p_bet(db, bet)
+
+
+# ── Admin P2P management routes ───────────────────────────────────────────────
+
+@router.get("/settings", response_class=HTMLResponse)
+def admin_settings(request: Request, db: Session = Depends(get_db)):
+    admin = require_admin(request, db)
+    settings = db.query(SiteSettings).first()
+    return templates.TemplateResponse(
+        "admin/settings.html",
+        {"request": request, "user": admin, "settings": settings},
+    )
+
+
+@router.post("/settings")
+def update_admin_settings(
+    request: Request,
+    p2p_betting_enabled: str = Form("off"),
+    db: Session = Depends(get_db),
+):
+    require_admin(request, db)
+    settings = db.query(SiteSettings).first()
+    settings.p2p_betting_enabled = (p2p_betting_enabled == "on")
+    db.commit()
+    return RedirectResponse("/admin/settings", status_code=302)
+
+
+@router.post("/p2p/{bet_id}/settle")
+def admin_settle_p2p(
+    bet_id: int,
+    request: Request,
+    winning_side: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    require_admin(request, db)
+    bet = db.query(P2PBet).filter(P2PBet.id == bet_id).first()
+    if not bet:
+        raise HTTPException(status_code=404, detail="P2P bet not found")
+    if bet.status not in ("open", "closed"):
+        raise HTTPException(status_code=400, detail="Bet cannot be settled in its current state")
+    if winning_side not in ("for", "against"):
+        raise HTTPException(status_code=400, detail="winning_side must be 'for' or 'against'")
+    _settle_p2p_bet(db, bet, winning_side)
+    db.commit()
+    return RedirectResponse(f"/admin/games/{bet.game_id}", status_code=302)
+
+
+@router.post("/p2p/{bet_id}/cancel")
+def admin_cancel_p2p(
+    bet_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    require_admin(request, db)
+    bet = db.query(P2PBet).filter(P2PBet.id == bet_id).first()
+    if not bet:
+        raise HTTPException(status_code=404, detail="P2P bet not found")
+    if bet.status not in ("open", "closed"):
+        raise HTTPException(status_code=400, detail="Bet cannot be cancelled in its current state")
+    _cancel_p2p_bet(db, bet)
+    db.commit()
+    return RedirectResponse(f"/admin/games/{bet.game_id}", status_code=302)
 
 
 # ── ELO import ────────────────────────────────────────────────────────────────
