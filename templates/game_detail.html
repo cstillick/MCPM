@@ -174,6 +174,13 @@
           {% if total_pool > 0 %}
             <p class="text-xs text-k-sub mt-3 text-right">Pool: 🪙 {{ total_pool }}</p>
           {% endif %}
+
+          {% set hist = price_histories.get(market.id, {}) %}
+          {% if hist and hist.labels | length >= 2 %}
+            <div class="mt-3 pt-3 border-t border-k-border">
+              <canvas id="chart-{{ market.id }}" height="90"></canvas>
+            </div>
+          {% endif %}
         </div>
       {% endfor %}
     </div>
@@ -183,4 +190,71 @@
     </div>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  var colorSets = [
+    { border: '#16A34A', bg: 'rgba(22,163,74,0.08)' },
+    { border: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
+    { border: '#4F46E5', bg: 'rgba(79,70,229,0.08)' },
+    { border: '#6B7280', bg: 'rgba(107,114,128,0.08)' }
+  ];
+  var chartConfigs = {{ price_histories | tojson }};
+  Object.entries(chartConfigs).forEach(function([marketId, hist]) {
+    if (!hist || !hist.labels || hist.labels.length < 2) return;
+    var canvas = document.getElementById('chart-' + marketId);
+    if (!canvas) return;
+    var optionLabels = Object.keys(hist.series);
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: hist.labels,
+        datasets: optionLabels.map(function(label, i) {
+          return {
+            label: label,
+            data: hist.series[label],
+            borderColor: colorSets[i % colorSets.length].border,
+            backgroundColor: colorSets[i % colorSets.length].bg,
+            borderWidth: 2,
+            pointRadius: hist.labels.length > 20 ? 0 : 2,
+            tension: 0.3,
+            fill: false
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        plugins: {
+          legend: {
+            display: optionLabels.length > 1,
+            labels: { color: '#6B7280', font: { size: 10 }, boxWidth: 10 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y + '%'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 0, max: 100,
+            ticks: { color: '#6B7280', font: { size: 10 }, callback: function(v) { return v + '%'; } },
+            grid: { color: '#E5E7EB' },
+            border: { color: '#E5E7EB' }
+          },
+          x: {
+            title: { display: true, text: 'Bets placed', color: '#6B7280', font: { size: 10 } },
+            ticks: { color: '#6B7280', font: { size: 10 }, maxTicksLimit: 6 },
+            grid: { color: '#E5E7EB' },
+            border: { color: '#E5E7EB' }
+          }
+        }
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

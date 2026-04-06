@@ -15,6 +15,23 @@ def elo_win_probability(elo_a: float, elo_b: float) -> float:
     return 1.0 / (1.0 + 10 ** ((elo_b - elo_a) / 400.0))
 
 
+def compute_price_history(market) -> dict:
+    """Replay bets in order to build per-option implied probability history."""
+    bets_sorted = sorted(market.bets, key=lambda b: b.created_at)
+    if not bets_sorted:
+        return {}
+    option_coins = {opt.id: 0 for opt in market.options}
+    labels = []
+    series = {opt.label: [] for opt in market.options}
+    for i, bet in enumerate(bets_sorted):
+        option_coins[bet.option_id] += bet.coins_wagered
+        total = sum(option_coins.values())
+        labels.append(i + 1)
+        for opt in market.options:
+            series[opt.label].append(round(option_coins[opt.id] / total * 100, 1))
+    return {"labels": labels, "series": series}
+
+
 def compute_team_win_probs(teams) -> dict:
     """
     Returns a dict of team_id -> win probability (normalized across all 4 teams).
@@ -89,6 +106,8 @@ def game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
             for o in m.options:
                 community_probs[o.id] = round(o.total_coins_wagered / total * 100, 1)
 
+    price_histories = {m.id: compute_price_history(m) for m in pregame_markets}
+
     return templates.TemplateResponse(
         "game_detail.html",
         {
@@ -99,6 +118,7 @@ def game_detail(game_id: int, request: Request, db: Session = Depends(get_db)):
             "user_bets": user_bets,
             "win_probs": win_probs,
             "community_probs": community_probs,
+            "price_histories": price_histories,
         },
     )
 
@@ -131,6 +151,8 @@ def race_detail(game_id: int, race_number: int, request: Request, db: Session = 
         for bet in bets:
             user_bets[bet.market_id] = bet
 
+    price_histories = {m.id: compute_price_history(m) for m in race_markets}
+
     return templates.TemplateResponse(
         "race_detail.html",
         {
@@ -140,5 +162,6 @@ def race_detail(game_id: int, race_number: int, request: Request, db: Session = 
             "race": race,
             "race_markets": race_markets,
             "user_bets": user_bets,
+            "price_histories": price_histories,
         },
     )
