@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
 from database import Base, engine
 from limiter import limiter
-from routers import auth, games, players, bets, admin
+from routers import auth, games, players, bets, admin, transactions
 
 
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
@@ -38,6 +38,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from database import DATABASE_URL
+    import logging
+    logging.warning(f"DATABASE: {DATABASE_URL[:30]}...")
     # Create all tables on startup (idempotent)
     Base.metadata.create_all(bind=engine)
     yield
@@ -58,3 +61,4 @@ app.include_router(games.router)
 app.include_router(players.router)
 app.include_router(bets.router)
 app.include_router(admin.router)
+app.include_router(transactions.router)
