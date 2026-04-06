@@ -40,19 +40,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI):
     # Create all tables on startup (idempotent)
     Base.metadata.create_all(bind=engine)
-    # Add columns that may not exist in older deployments
+    # Add columns that may not exist in older deployments.
+    # Each migration uses its own connection so a failed ALTER TABLE (column already exists)
+    # does not abort the PostgreSQL transaction and prevent subsequent migrations from running.
     from sqlalchemy import text
-    with engine.connect() as conn:
+    migrations = [
+        "ALTER TABLE players ADD COLUMN retired BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE games ADD COLUMN created_by_user_id INTEGER REFERENCES users(id)",
+    ]
+    for sql in migrations:
         try:
-            conn.execute(text("ALTER TABLE players ADD COLUMN retired BOOLEAN NOT NULL DEFAULT FALSE"))
-            conn.commit()
+            with engine.connect() as conn:
+                conn.execute(text(sql))
+                conn.commit()
         except Exception:
-            pass  # Column already exists
-        try:
-            conn.execute(text("ALTER TABLE games ADD COLUMN created_by_user_id INTEGER REFERENCES users(id)"))
-            conn.commit()
-        except Exception:
-            pass  # Column already exists
+            pass  # Column already exists or other expected error
     # Seed SiteSettings singleton if missing
     from database import SessionLocal
     from models import SiteSettings
