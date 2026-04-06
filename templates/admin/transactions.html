@@ -3,22 +3,22 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; Dashboard</a>
-  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">💰 All Transactions</h1>
+  <a href="/admin" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; Dashboard</a>
+  <h1 class="text-2xl font-bold text-k-text">All Transactions</h1>
 </div>
 
 <!-- Filters -->
 <form method="get" action="/admin/transactions"
-      class="bg-mk-surface rounded-xl border border-mk-border p-4 mb-6 flex flex-wrap gap-3 items-end">
+      class="bg-k-surface rounded-xl border border-k-border shadow-card p-4 mb-6 flex flex-wrap gap-3 items-end">
   <div>
-    <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">Username</label>
+    <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Username</label>
     <input type="text" name="username" value="{{ filters.username }}" placeholder="Any"
-           class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber" />
+           class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
   </div>
   <div>
-    <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">Type</label>
+    <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Type</label>
     <select name="txn_type"
-            class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber">
+            class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
       <option value="">All</option>
       <option value="pending"     {% if filters.type == 'pending'     %}selected{% endif %}>Pending</option>
       <option value="won"         {% if filters.type == 'won'         %}selected{% endif %}>Won</option>
@@ -27,69 +27,68 @@
     </select>
   </div>
   <div>
-    <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">From</label>
+    <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">From</label>
     <input type="date" name="from_date" value="{{ filters.from }}"
-           class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber" />
+           class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
   </div>
   <div>
-    <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">To</label>
+    <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">To</label>
     <input type="date" name="to_date" value="{{ filters.to }}"
-           class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber" />
+           class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
   </div>
   <button type="submit"
-          class="bg-mk-amber text-[#0A0A0B] font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+          class="bg-k-accent text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-600 transition-colors">
     Apply
   </button>
-  <a href="/admin/transactions" class="text-sm text-mk-sub hover:text-mk-text transition-colors py-2">Clear</a>
-
+  <a href="/admin/transactions" class="text-sm text-k-sub hover:text-k-text transition-colors py-2">Clear</a>
   <a href="/admin/transactions/export?username={{ filters.username }}&txn_type={{ filters.type }}&from_date={{ filters.from }}&to_date={{ filters.to }}"
-     class="ml-auto text-sm bg-mk-green hover:opacity-90 text-[#0A0A0B] font-bold px-4 py-2 rounded-lg transition-opacity">
+     class="ml-auto text-sm bg-k-yes text-white font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
     Export CSV
   </a>
 </form>
 
 <!-- Table -->
 {% if transactions %}
-  <div class="bg-mk-surface rounded-xl border border-mk-border overflow-hidden">
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-mk-border">
-          <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">Username</th>
-          <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">Date Placed</th>
-          <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">Description</th>
-          <th class="px-4 py-3 text-center text-mk-sub text-xs uppercase tracking-widest">Type</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Wagered</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Net</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Date Settled</th>
+        <tr class="border-b border-k-border bg-k-bg">
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">User</th>
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Date</th>
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Description</th>
+          <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Type</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Wagered</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Net</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Settled</th>
         </tr>
       </thead>
       <tbody>
         {% for txn in transactions %}
-          <tr class="border-b border-mk-border hover:bg-[#1a1a1f] transition-colors">
-            <td class="px-4 py-3 font-semibold text-mk-text">{{ txn.user.username }}</td>
-            <td class="px-4 py-3 text-mk-sub text-xs whitespace-nowrap font-display">
+          <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+            <td class="px-4 py-3 font-semibold text-k-text">{{ txn.user.username }}</td>
+            <td class="px-4 py-3 text-k-sub text-xs whitespace-nowrap">
               {{ txn.created_at.strftime('%b %d, %Y') }}
             </td>
-            <td class="px-4 py-3 text-mk-text">{{ txn.description }}</td>
+            <td class="px-4 py-3 text-k-text">{{ txn.description }}</td>
             <td class="px-4 py-3 text-center">
               {% if txn.type == 'won' %}
-                <span class="text-mk-green text-xs font-bold tracking-widest uppercase">Won</span>
+                <span class="text-k-yes text-xs font-semibold bg-k-yes/10 px-2 py-0.5 rounded-full">Won</span>
               {% elif txn.type == 'lost' %}
-                <span class="text-mk-red text-xs font-bold tracking-widest uppercase">Lost</span>
+                <span class="text-k-no text-xs font-semibold bg-k-no/10 px-2 py-0.5 rounded-full">Lost</span>
               {% elif txn.type == 'pending' %}
-                <span class="text-mk-amber text-xs font-bold tracking-widest uppercase">Pending</span>
+                <span class="text-k-accent text-xs font-semibold bg-k-accent/10 px-2 py-0.5 rounded-full">Pending</span>
               {% else %}
-                <span class="text-mk-sub text-xs font-bold tracking-widest uppercase">Grant</span>
+                <span class="text-k-sub text-xs font-semibold bg-k-bg px-2 py-0.5 rounded-full border border-k-border">Grant</span>
               {% endif %}
             </td>
-            <td class="px-4 py-3 text-right text-mk-sub font-display">
+            <td class="px-4 py-3 text-right text-k-sub">
               {% if txn.coins_wagered %}🪙 {{ txn.coins_wagered }}{% else %}—{% endif %}
             </td>
-            <td class="px-4 py-3 text-right font-bold font-display
-              {% if txn.net_amount > 0 %}text-mk-green{% elif txn.net_amount < 0 %}text-mk-red{% else %}text-mk-sub{% endif %}">
+            <td class="px-4 py-3 text-right font-semibold
+              {% if txn.net_amount > 0 %}text-k-yes{% elif txn.net_amount < 0 %}text-k-no{% else %}text-k-sub{% endif %}">
               {% if txn.net_amount > 0 %}+{% endif %}{{ txn.net_amount }}
             </td>
-            <td class="px-4 py-3 text-right text-mk-sub text-xs font-display">
+            <td class="px-4 py-3 text-right text-k-sub text-xs">
               {% if txn.settled_at %}{{ txn.settled_at.strftime('%b %d, %Y') }}{% else %}—{% endif %}
             </td>
           </tr>
@@ -98,9 +97,9 @@
     </table>
   </div>
 {% else %}
-  <div class="bg-mk-surface rounded-xl border border-mk-border p-10 text-center">
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-10 text-center">
     <p class="text-3xl mb-2">📭</p>
-    <p class="font-semibold text-mk-text">No transactions match your filters.</p>
+    <p class="font-semibold text-k-text">No transactions match your filters.</p>
   </div>
 {% endif %}
 {% endblock %}

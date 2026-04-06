@@ -106,7 +106,8 @@ class RaceResult(Base):
     id = Column(Integer, primary_key=True, index=True)
     race_id = Column(Integer, ForeignKey("races.id"), nullable=False)
     player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
-    placement = Column(Integer, nullable=False)  # 1–8
+    placement = Column(Integer, nullable=False)  # 1–4 (only racers have a row)
+    points = Column(Integer, nullable=True)  # 1st=3, 2nd=2, 3rd=1, 4th=0
 
     race = relationship("Race", back_populates="results")
     player = relationship("Player")
@@ -118,18 +119,25 @@ class BetMarket(Base):
     id = Column(Integer, primary_key=True, index=True)
     game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
     race_id = Column(Integer, ForeignKey("races.id"), nullable=True)  # NULL = pre-game market
-    # team_win | elo_direction | race_winner | shirt_swap | head_to_head
+    # team_win | elo_direction | race_winner | shirt_swap | over_under
     market_type = Column(String, nullable=False)
     description = Column(String, nullable=False)
     # open | closed | settled
     status = Column(String, default="open", nullable=False)
     # label of the winning option, set when settling
     winning_outcome = Column(String, nullable=True)
+    # over_under markets: the numeric threshold
+    threshold = Column(Float, nullable=True)
+    # over_under subject (team or player)
+    subject_team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    subject_player_id = Column(Integer, ForeignKey("players.id"), nullable=True)
 
     game = relationship("Game", back_populates="bet_markets")
     race = relationship("Race", back_populates="bet_markets")
     options = relationship("BetOption", back_populates="market", cascade="all, delete-orphan")
     bets = relationship("Bet", back_populates="market")
+    subject_team = relationship("Team", foreign_keys=[subject_team_id])
+    subject_player = relationship("Player", foreign_keys=[subject_player_id])
 
 
 class BetOption(Base):

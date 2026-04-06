@@ -3,47 +3,46 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; Dashboard</a>
-  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">📊 Import ELO Data</h1>
+  <a href="/admin" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; Dashboard</a>
+  <h1 class="text-2xl font-bold text-k-text">Import ELO Data</h1>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-6">
   <!-- Upload form -->
-  <div class="bg-mk-surface rounded-xl border border-mk-border p-6">
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-6">
     {% if message %}
-      <div class="mb-4 px-4 py-3 rounded-r text-sm font-medium border-l-4
-        {% if 'complete' in message %}border-mk-green text-mk-text bg-mk-bg
-        {% else %}border-mk-red text-mk-text bg-mk-bg{% endif %}">
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium border
+        {% if 'complete' in message or 'reset' in message or 'Reset' in message %}border-k-yes/30 bg-k-yes/5 text-k-yes
+        {% else %}border-k-no/30 bg-k-no/5 text-k-no{% endif %}">
         {{ message }}
       </div>
     {% endif %}
 
     <form method="post" action="/admin/elo-import" enctype="multipart/form-data" class="space-y-4">
       <div>
-        <label class="block text-xs font-semibold text-mk-sub mb-2 uppercase tracking-widest">Upload JSON File</label>
+        <label class="block text-xs font-semibold text-k-sub mb-2 uppercase tracking-wider">Upload JSON File</label>
         <input type="file" name="file" accept=".json" required
-               class="block w-full text-sm text-mk-sub
+               class="block w-full text-sm text-k-sub
                       file:mr-4 file:py-2 file:px-4
-                      file:rounded-lg file:border-0 file:text-sm file:font-bold
-                      file:bg-mk-amber/20 file:text-mk-amber hover:file:bg-mk-amber/30 cursor-pointer" />
+                      file:rounded-lg file:border-0 file:text-sm file:font-semibold
+                      file:bg-k-accent/10 file:text-k-accent hover:file:bg-k-accent/20 cursor-pointer" />
       </div>
       <button type="submit"
-              class="bg-mk-amber text-[#0A0A0B] font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
+              class="bg-k-accent text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors">
         Import Players &amp; ELOs
       </button>
     </form>
   </div>
 
   <!-- Format guide -->
-  <div class="bg-mk-surface rounded-xl border border-mk-border p-6 space-y-5">
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-6 space-y-5">
     <div>
-      <h2 class="font-bold text-mk-text mb-1 text-sm uppercase tracking-widest">Format 1 — Firebase RTDB Export</h2>
-      <p class="text-sm text-mk-sub mb-3">
-        Upload a raw Firebase Realtime Database export. ELO values are read from the <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">ELO</code> key.
-        Stats (<code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">total_games</code>, <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">total_races</code>, <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">total_wins</code>)
-        are computed automatically from the <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">act-history</code> key if present.
+      <h2 class="font-semibold text-k-text mb-1 text-sm uppercase tracking-wider">Format 1 — Firebase RTDB Export</h2>
+      <p class="text-sm text-k-sub mb-3">
+        Upload a raw Firebase Realtime Database export. ELO values are read from the <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">ELO</code> key.
+        Stats are computed automatically from the <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">act-history</code> key if present.
       </p>
-      <pre class="bg-mk-bg border border-mk-border text-mk-green text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>{
+      <pre class="bg-k-bg border border-k-border text-k-yes text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>{
   "ELO": {
     "Mario": 1523,
     "Luigi": 1478
@@ -52,13 +51,13 @@
 }</code></pre>
     </div>
 
-    <div class="border-t border-mk-border pt-5">
-      <h2 class="font-bold text-mk-text mb-1 text-sm uppercase tracking-widest">Format 2 — Player Array</h2>
-      <p class="text-sm text-mk-sub mb-3">
-        Upload a JSON array of player objects. Only <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">name</code>
-        and <code class="bg-mk-border px-1 rounded text-mk-amber font-display text-xs">elo</code> are required.
+    <div class="border-t border-k-border pt-5">
+      <h2 class="font-semibold text-k-text mb-1 text-sm uppercase tracking-wider">Format 2 — Player Array</h2>
+      <p class="text-sm text-k-sub mb-3">
+        Upload a JSON array of player objects. Only <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">name</code>
+        and <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">elo</code> are required.
       </p>
-      <pre class="bg-mk-bg border border-mk-border text-mk-green text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>[
+      <pre class="bg-k-bg border border-k-border text-k-yes text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>[
   {
     "name": "Mario",
     "elo": 1523.4,
@@ -73,9 +72,34 @@
 ]</code></pre>
     </div>
 
-    <p class="text-xs text-mk-sub">
-      Players are matched by <strong class="text-mk-text">name</strong>. Existing players are updated; new names are created.
+    <p class="text-xs text-k-sub">
+      Players are matched by <strong class="text-k-text">name</strong>. Existing players are updated; new names are created.
     </p>
+  </div>
+</div>
+
+<!-- Danger zone: reset ELO -->
+<div class="mt-8 bg-k-surface rounded-xl border border-k-no/30 shadow-card p-6 max-w-lg"
+     x-data="{ confirm: false }">
+  <h2 class="font-semibold text-k-no text-sm uppercase tracking-wider mb-2">Danger Zone</h2>
+  <p class="text-sm text-k-sub mb-4">
+    Reset <strong class="text-k-text">all player ELO stats</strong> to defaults (ELO 1000, 0 wins/races/games) and delete all head-to-head records. This cannot be undone.
+  </p>
+  <div x-show="!confirm">
+    <button @click="confirm = true"
+            class="bg-k-no/10 border border-k-no text-k-no font-semibold px-5 py-2 rounded-xl hover:bg-k-no/20 transition-colors text-sm">
+      Reset All ELO Data
+    </button>
+  </div>
+  <div x-show="confirm" class="flex items-center gap-3 flex-wrap">
+    <span class="text-sm text-k-text font-semibold">Are you sure? This cannot be undone.</span>
+    <form method="post" action="/admin/elo/reset" class="inline">
+      <button type="submit"
+              class="bg-k-no text-white font-semibold px-5 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm">
+        Yes, Reset Everything
+      </button>
+    </form>
+    <button @click="confirm = false" class="text-sm text-k-sub hover:text-k-text transition-colors">Cancel</button>
   </div>
 </div>
 {% endblock %}

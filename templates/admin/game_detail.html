@@ -3,136 +3,192 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; Dashboard</a>
-  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">{{ game.name }}</h1>
-  <span class="text-sm font-bold tracking-widest uppercase
-    {% if game.status == 'live' %}text-mk-amber
-    {% elif game.status == 'upcoming' %}text-mk-sub
-    {% else %}text-mk-green{% endif %}">
-    {{ game.status | upper }}
+  <a href="/admin" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; Dashboard</a>
+  <h1 class="text-2xl font-bold text-k-text">{{ game.name }}</h1>
+  <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full
+    {% if game.status == 'live' %}bg-k-yes/10 text-k-yes
+    {% elif game.status == 'upcoming' %}bg-k-bg text-k-sub border border-k-border
+    {% else %}bg-k-yes/10 text-k-yes{% endif %}">
+    {{ game.status | capitalize }}
   </span>
 </div>
 
 <!-- Game status controls -->
-<div class="bg-mk-surface rounded-xl border border-mk-border p-4 mb-6 flex flex-wrap gap-3 items-center">
-  <span class="text-sm font-semibold text-mk-sub">Change status:</span>
+<div class="bg-k-surface rounded-xl border border-k-border shadow-card p-4 mb-6 flex flex-wrap gap-2 items-center">
+  <span class="text-sm font-semibold text-k-sub mr-2">Change status:</span>
   {% for status in ['upcoming', 'live', 'completed'] %}
     <form method="post" action="/admin/games/{{ game.id }}/set-status" class="inline">
       <input type="hidden" name="new_status" value="{{ status }}" />
       <button type="submit"
-              class="text-sm font-bold px-4 py-1.5 rounded-lg border transition-colors
-              {% if game.status == status %}border-mk-border text-mk-sub cursor-default opacity-50
-              {% elif status == 'live' %}border-mk-amber text-mk-amber hover:bg-mk-amber/10
-              {% elif status == 'completed' %}border-mk-green text-mk-green hover:bg-mk-green/10
-              {% else %}border-mk-border text-mk-sub hover:border-mk-sub hover:text-mk-text{% endif %}"
+              class="text-sm font-semibold px-4 py-1.5 rounded-lg border transition-colors
+              {% if game.status == status %}border-k-border text-k-sub cursor-default opacity-50
+              {% elif status == 'live' %}border-k-yes text-k-yes hover:bg-k-yes/10
+              {% elif status == 'completed' %}border-k-accent text-k-accent hover:bg-k-accent/10
+              {% else %}border-k-border text-k-sub hover:text-k-text{% endif %}"
               {% if game.status == status %}disabled{% endif %}>
         {{ status | capitalize }}
       </button>
     </form>
   {% endfor %}
-  <a href="/games/{{ game.id }}" class="ml-auto text-sm text-mk-amber hover:opacity-80 transition-opacity">View public page &rarr;</a>
+  <a href="/games/{{ game.id }}" class="ml-auto text-sm text-k-accent hover:underline">View public page &rarr;</a>
 </div>
 
 <!-- Teams overview -->
 <section class="mb-6">
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">Teams</h2>
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">Teams</h2>
   <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
     {% for team in game.teams %}
-      <div class="bg-mk-surface rounded-xl border border-mk-border p-3 text-sm">
-        <p class="font-bold text-mk-text mb-1">{{ team.name }}</p>
-        <p class="text-mk-sub">{{ team.player1.name }} &amp; {{ team.player2.name }}</p>
-        <p class="text-xs text-mk-sub mt-1">Avg ELO: <span class="text-mk-amber font-display font-bold">{{ team.average_elo | round(0) | int }}</span></p>
+      <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-3 text-sm">
+        <p class="font-bold text-k-text mb-1">{{ team.name }}</p>
+        <p class="text-k-sub">{{ team.player1.name }} &amp; {{ team.player2.name }}</p>
+        <p class="text-xs text-k-sub mt-1">Avg ELO: <span class="text-k-accent font-bold">{{ team.average_elo | round(0) | int }}</span></p>
       </div>
     {% endfor %}
   </div>
 </section>
 
-<!-- ELO market settlement -->
+<!-- Pre-game markets overview -->
 <section class="mb-6">
   <div class="flex items-center justify-between mb-3">
-    <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase">ELO Direction Markets</h2>
+    <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest">Pre-Game Markets</h2>
     <a href="/admin/games/{{ game.id }}/settle-elo-form"
-       class="text-sm bg-mk-green hover:opacity-90 text-[#0A0A0B] font-bold px-4 py-1.5 rounded-lg transition-opacity">
+       class="text-sm bg-k-yes text-white font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
       Settle ELO Markets
     </a>
   </div>
-  <div class="bg-mk-surface rounded-xl border border-mk-border overflow-hidden">
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-mk-border">
-          <th class="px-4 py-2 text-left text-mk-sub text-xs uppercase tracking-widest">Market</th>
-          <th class="px-4 py-2 text-center text-mk-sub text-xs uppercase tracking-widest">Status</th>
-          <th class="px-4 py-2 text-center text-mk-sub text-xs uppercase tracking-widest">Winner</th>
-          <th class="px-4 py-2 text-right text-mk-sub text-xs uppercase tracking-widest">Pool</th>
+        <tr class="border-b border-k-border bg-k-bg">
+          <th class="px-4 py-2 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Market</th>
+          <th class="px-4 py-2 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Type</th>
+          <th class="px-4 py-2 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Status</th>
+          <th class="px-4 py-2 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Winner</th>
+          <th class="px-4 py-2 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Pool</th>
         </tr>
       </thead>
       <tbody>
         {% for market in pregame_markets %}
-          {% if market.market_type == 'elo_direction' %}
-            <tr class="border-b border-mk-border">
-              <td class="px-4 py-2 text-mk-text">{{ market.description }}</td>
-              <td class="px-4 py-2 text-center">
-                <span class="text-xs font-bold tracking-widest uppercase
-                  {% if market.status == 'open' %}text-mk-green
-                  {% elif market.status == 'settled' %}text-mk-sub
-                  {% else %}text-mk-amber{% endif %}">
-                  {{ market.status }}
-                </span>
-              </td>
-              <td class="px-4 py-2 text-center text-mk-sub text-xs">
-                {{ market.winning_outcome or '—' }}
-              </td>
-              <td class="px-4 py-2 text-right text-mk-sub text-xs font-display">
-                🪙 {{ market.options | sum(attribute='total_coins_wagered') }}
-              </td>
-            </tr>
-          {% endif %}
+          <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+            <td class="px-4 py-2 text-k-text text-sm">{{ market.description }}</td>
+            <td class="px-4 py-2 text-center text-k-sub text-xs">
+              {{ market.market_type | replace('_', ' ') | capitalize }}
+            </td>
+            <td class="px-4 py-2 text-center">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                {% if market.status == 'open' %}bg-k-yes/10 text-k-yes
+                {% elif market.status == 'settled' %}bg-k-bg text-k-sub border border-k-border
+                {% else %}bg-amber-50 text-amber-600 border border-amber-200{% endif %}">
+                {{ market.status | capitalize }}
+              </span>
+            </td>
+            <td class="px-4 py-2 text-center text-k-sub text-xs">
+              {{ market.winning_outcome or '—' }}
+            </td>
+            <td class="px-4 py-2 text-right text-k-sub text-xs">
+              🪙 {{ market.options | sum(attribute='total_coins_wagered') }}
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </section>
 
+<!-- Create Over/Under Market -->
+<section class="mb-6" x-data="{ open: false }">
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest">Over/Under Markets</h2>
+    <button @click="open = !open"
+            class="text-xs bg-k-accent/10 hover:bg-k-accent/20 text-k-accent font-semibold px-3 py-1.5 rounded-lg border border-k-accent/30 transition-colors">
+      + Create Over/Under
+    </button>
+  </div>
+  <div x-show="open" class="bg-k-surface rounded-xl border border-k-border shadow-card p-5 max-w-lg"
+       x-data="{ subjectType: 'team' }">
+    <form method="post" action="/admin/games/{{ game.id }}/markets/create-over-under" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Subject Type</label>
+        <select name="subject_type" x-model="subjectType"
+                class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+          <option value="team">Team</option>
+          <option value="player">Player</option>
+        </select>
+      </div>
+      <div x-show="subjectType === 'team'">
+        <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Team</label>
+        <select name="subject_id" :disabled="subjectType !== 'team'"
+                class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+          {% for team in game.teams %}
+            <option value="{{ team.id }}">{{ team.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div x-show="subjectType === 'player'">
+        <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Player</label>
+        <select name="subject_id" :disabled="subjectType !== 'player'"
+                class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+          {% for team in game.teams %}
+            <option value="{{ team.player1.id }}">{{ team.player1.name }} ({{ team.name }})</option>
+            <option value="{{ team.player2.id }}">{{ team.player2.name }} ({{ team.name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Threshold (points)</label>
+        <input type="number" name="threshold" min="0" max="200" step="0.5" required
+               placeholder="e.g. 24"
+               class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
+        <p class="text-xs text-k-sub mt-1">Max possible: 48 pts/player · 96 pts/team (16 races × 3 pts)</p>
+      </div>
+      <button type="submit"
+              class="bg-k-accent text-white font-semibold px-5 py-2 rounded-xl hover:bg-indigo-600 transition-colors text-sm">
+        Create Market
+      </button>
+    </form>
+  </div>
+</section>
+
 <!-- Races -->
 <section>
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">Races</h2>
-  <div class="bg-mk-surface rounded-xl border border-mk-border overflow-hidden">
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">Races</h2>
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-mk-border">
-          <th class="px-4 py-2 text-left text-mk-sub text-xs uppercase tracking-widest">Race</th>
-          <th class="px-4 py-2 text-center text-mk-sub text-xs uppercase tracking-widest">Status</th>
-          <th class="px-4 py-2 text-right text-mk-sub text-xs uppercase tracking-widest">Actions</th>
+        <tr class="border-b border-k-border bg-k-bg">
+          <th class="px-4 py-2 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Race</th>
+          <th class="px-4 py-2 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Status</th>
+          <th class="px-4 py-2 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for race in game.races %}
-          <tr class="border-b border-mk-border hover:bg-[#1a1a1f] transition-colors">
-            <td class="px-4 py-2 font-semibold text-mk-text">Race {{ race.race_number }}</td>
+          <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+            <td class="px-4 py-2 font-semibold text-k-text">Race {{ race.race_number }}</td>
             <td class="px-4 py-2 text-center">
-              <span class="text-xs font-bold tracking-widest uppercase
-                {% if race.status == 'completed' %}text-mk-green
-                {% elif race.status == 'betting_open' %}text-mk-amber
-                {% else %}text-mk-sub{% endif %}">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                {% if race.status == 'completed' %}bg-k-yes/10 text-k-yes
+                {% elif race.status == 'betting_open' %}bg-k-accent text-white
+                {% else %}bg-k-bg text-k-sub border border-k-border{% endif %}">
                 {{ race.status | upper | replace('_', ' ') }}
               </span>
             </td>
-            <td class="px-4 py-2 text-right flex justify-end gap-3">
+            <td class="px-4 py-2 text-right">
               {% if race.status == 'pending' %}
-                <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/open-betting">
+                <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/open-betting" class="inline">
                   <button type="submit"
-                          class="text-xs bg-mk-amber/20 hover:bg-mk-amber/30 text-mk-amber font-bold px-3 py-1 rounded-lg border border-mk-amber/50 transition-colors">
+                          class="text-xs bg-k-accent/10 hover:bg-k-accent/20 text-k-accent font-semibold px-3 py-1 rounded-lg border border-k-accent/30 transition-colors">
                     Open Betting
                   </button>
                 </form>
               {% elif race.status == 'betting_open' %}
                 <a href="/admin/games/{{ game.id }}/races/{{ race.id }}/results"
-                   class="text-xs bg-mk-red hover:opacity-90 text-white font-bold px-3 py-1 rounded-lg transition-opacity">
+                   class="text-xs bg-k-no text-white font-semibold px-3 py-1 rounded-lg hover:opacity-90 transition-opacity">
                   Enter Results
                 </a>
               {% elif race.status == 'completed' %}
                 <a href="/games/{{ game.id }}/race/{{ race.race_number }}"
-                   class="text-xs text-mk-amber hover:opacity-80 transition-opacity">View</a>
+                   class="text-xs text-k-accent hover:underline">View</a>
               {% endif %}
             </td>
           </tr>

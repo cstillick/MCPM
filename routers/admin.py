@@ -21,6 +21,9 @@ from template_env import templates
 
 router = APIRouter(prefix="/admin")
 
+# Points awarded per placement (only placements 1–4 score; others don't race)
+POINTS_MAP = {1: 3, 2: 2, 3: 1, 4: 0}
+
 
 # ── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -230,6 +233,20 @@ def create_game(
             db.add(BetOption(market_id=market.id, label="Gain"))
             db.add(BetOption(market_id=market.id, label="Lose"))
 
+    # 3. Shirt swap markets per team (game-level: top 2 teams by total points swap)
+    for team, _, _ in teams:
+        shirt_market = BetMarket(
+            game_id=game.id,
+            race_id=None,
+            market_type="shirt_swap",
+            description=f"Will {team.name} shirt swap? (top 2 teams by total points)",
+            status="open",
+        )
+        db.add(shirt_market)
+        db.flush()
+        db.add(BetOption(market_id=shirt_market.id, label="Yes"))
+        db.add(BetOption(market_id=shirt_market.id, label="No"))
+
     db.commit()
     return RedirectResponse(f"/games/{game.id}", status_code=302)
 
@@ -256,9 +273,141 @@ def set_game_status(
             BetMarket.game_id == game_id,
             BetMarket.race_id == None,
             BetMarket.status == "open",
-        ).update({"status": "closed"})
+            BetMarket.market_type != "shirt_swap",
+            BetMarket.market_type != "over_under",
+        ).update({"status": "closed"}, synchronize_session=False)
+
+    if new_status == "completed":
+        _settle_game_completion_markets(game_id, db)
 
     game.status = new_status
+    db.commit()
+    return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
+
+
+def _settle_game_completion_markets(game_id: int, db: Session):
+    """Settle shirt_swap and over_under markets when a game is marked completed."""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        return
+
+    team_points = _get_team_points(game_id, db)
+    player_points = _get_player_points(game_id, db)
+
+    # Determine top-2 teams by total points
+    sorted_teams = sorted(team_points.items(), key=lambda x: x[1], reverse=True)
+    top2_team_ids = {t[0] for t in sorted_teams[:2]}
+
+    # Settle shirt_swap markets
+    shirt_markets = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.market_type == "shirt_swap",
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    for market in shirt_markets:
+        # Market description: "Will [Team Name] shirt swap? ..."
+        # Find the team by matching name in description
+        team_name = market.description.split("Will ")[1].split(" shirt swap")[0]
+        matched_team = next((t for t in game.teams if t.name == team_name), None)
+        if matched_team is None:
+            continue
+        winning_label = "Yes" if matched_team.id in top2_team_ids else "No"
+        market.winning_outcome = winning_label
+        market.status = "settled"
+        _settle_market(db, market, winning_label)
+
+    # Update shirt_swap_count for players on top-2 teams
+    for team in game.teams:
+        if team.id in top2_team_ids:
+            for player in (team.player1, team.player2):
+                player.shirt_swap_count += 1
+
+    # Update total_games and total_wins for all players
+    # Find winning team(s) — the team with the most points
+    if sorted_teams:
+        max_pts = sorted_teams[0][1]
+        winning_team_ids = {t[0] for t in sorted_teams if t[1] == max_pts}
+    else:
+        winning_team_ids = set()
+
+    for team in game.teams:
+        for player in (team.player1, team.player2):
+            player.total_games += 1
+            if team.id in winning_team_ids:
+                player.total_wins += 1
+
+    # Settle over_under markets
+    ou_markets = db.query(BetMarket).filter(
+        BetMarket.game_id == game_id,
+        BetMarket.market_type == "over_under",
+        BetMarket.status.in_(["open", "closed"]),
+    ).all()
+
+    for market in ou_markets:
+        if market.threshold is None:
+            continue
+        if market.subject_team_id:
+            actual = team_points.get(market.subject_team_id, 0)
+        elif market.subject_player_id:
+            actual = player_points.get(market.subject_player_id, 0)
+        else:
+            continue
+        winning_label = "Over" if actual > market.threshold else "Under"
+        market.winning_outcome = winning_label
+        market.status = "settled"
+        _settle_market(db, market, winning_label)
+
+
+# ── Over/Under market creation ────────────────────────────────────────────────
+
+@router.post("/games/{game_id}/markets/create-over-under")
+def create_over_under_market(
+    game_id: int,
+    request: Request,
+    subject_type: str = Form(...),   # "team" or "player"
+    subject_id: int = Form(...),
+    threshold: float = Form(...),
+    db: Session = Depends(get_db),
+):
+    require_admin(request, db)
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if subject_type not in ("team", "player"):
+        raise HTTPException(status_code=400, detail="subject_type must be 'team' or 'player'")
+
+    if subject_type == "team":
+        subject = db.query(Team).filter(Team.id == subject_id, Team.game_id == game_id).first()
+        if not subject:
+            raise HTTPException(status_code=404, detail="Team not found in this game")
+        description = f"Will {subject.name} score over or under {threshold} total points?"
+        market = BetMarket(
+            game_id=game_id, race_id=None,
+            market_type="over_under",
+            description=description,
+            status="open",
+            threshold=threshold,
+            subject_team_id=subject_id,
+        )
+    else:
+        subject = db.query(Player).filter(Player.id == subject_id).first()
+        if not subject:
+            raise HTTPException(status_code=404, detail="Player not found")
+        description = f"Will {subject.name} score over or under {threshold} total points?"
+        market = BetMarket(
+            game_id=game_id, race_id=None,
+            market_type="over_under",
+            description=description,
+            status="open",
+            threshold=threshold,
+            subject_player_id=subject_id,
+        )
+
+    db.add(market)
+    db.flush()
+    db.add(BetOption(market_id=market.id, label="Over"))
+    db.add(BetOption(market_id=market.id, label="Under"))
     db.commit()
     return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
 
@@ -323,20 +472,6 @@ def open_race_betting(
     for player in players_in_game:
         db.add(BetOption(market_id=winner_market.id, label=player.name))
 
-    # 2. Shirt swap market per player (will they finish top 2?)
-    for player in players_in_game:
-        shirt_market = BetMarket(
-            game_id=game_id,
-            race_id=race_id,
-            market_type="shirt_swap",
-            description=f"Will {player.name} shirt swap (top 2) in Race {race.race_number}?",
-            status="open",
-        )
-        db.add(shirt_market)
-        db.flush()
-        db.add(BetOption(market_id=shirt_market.id, label="Yes"))
-        db.add(BetOption(market_id=shirt_market.id, label="No"))
-
     race.status = "betting_open"
     db.commit()
     return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
@@ -390,28 +525,35 @@ async def submit_race_results(
 
     form = await request.form()
 
-    placements = {}
+    # Only collect placements for players who actually raced (blank = did not race)
+    placements: dict = {}  # player_id -> placement (1–4)
     for player in players_in_game:
         key = f"player_{player.id}"
-        val = form.get(key)
-        if val is None:
-            raise HTTPException(status_code=400, detail=f"Missing placement for {player.name}")
+        val = form.get(key, "").strip()
+        if not val:
+            continue  # did not race
         try:
             placement = int(val)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid placement value")
-        if placement < 1 or placement > 8:
-            raise HTTPException(status_code=400, detail="Placement must be 1-8")
+            raise HTTPException(status_code=400, detail=f"Invalid placement for {player.name}")
+        if placement < 1 or placement > 4:
+            raise HTTPException(status_code=400, detail=f"Placement must be 1–4 (got {placement})")
         placements[player.id] = placement
 
-    # Validate unique placements
-    if len(set(placements.values())) != len(placements):
-        raise HTTPException(status_code=400, detail="Each placement must be unique (1-8)")
+    if len(placements) != 4:
+        raise HTTPException(status_code=400, detail=f"Exactly 4 players must race (got {len(placements)})")
+    if len(set(placements.values())) != 4:
+        raise HTTPException(status_code=400, detail="Each placement (1–4) must be unique")
 
-    # Save results
+    # Save results with points
     for player_id, placement in placements.items():
-        result = RaceResult(race_id=race_id, player_id=player_id, placement=placement)
+        pts = POINTS_MAP.get(placement, 0)
+        result = RaceResult(race_id=race_id, player_id=player_id, placement=placement, points=pts)
         db.add(result)
+        # Update total_races for each racer
+        player_obj = next((p for p in players_in_game if p.id == player_id), None)
+        if player_obj:
+            player_obj.total_races += 1
 
     # Settle race markets
     winner_player_id = min(placements, key=lambda pid: placements[pid])
@@ -424,25 +566,47 @@ async def submit_race_results(
             market.status = "settled"
             _settle_market(db, market, winning_label)
 
-        elif market.market_type == "shirt_swap":
-            # Extract player name from description "Will [name] shirt swap..."
-            player_name = market.description.split("Will ")[1].split(" shirt swap")[0]
-            player_obj = next((p for p in players_in_game if p.name == player_name), None)
-            if player_obj:
-                did_shirt_swap = placements[player_obj.id] <= 2
-                winning_label = "Yes" if did_shirt_swap else "No"
-                market.winning_outcome = winning_label
-                market.status = "settled"
-                _settle_market(db, market, winning_label)
-
-                # Update player shirt swap count
-                if did_shirt_swap:
-                    player_obj.shirt_swap_count += 1
-                player_obj.total_races += 1
-
     race.status = "completed"
     db.commit()
     return RedirectResponse(f"/admin/games/{game_id}", status_code=302)
+
+
+def _get_team_points(game_id: int, db: Session) -> dict:
+    """Return {team_id: total_points} for all teams in a game."""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        return {}
+    result = {}
+    for team in game.teams:
+        pts = 0
+        for player_id in (team.player1_id, team.player2_id):
+            rows = (
+                db.query(RaceResult)
+                .join(Race, RaceResult.race_id == Race.id)
+                .filter(Race.game_id == game_id, RaceResult.player_id == player_id)
+                .all()
+            )
+            pts += sum(r.points or 0 for r in rows)
+        result[team.id] = pts
+    return result
+
+
+def _get_player_points(game_id: int, db: Session) -> dict:
+    """Return {player_id: total_points} for all players in a game."""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game:
+        return {}
+    result = {}
+    for team in game.teams:
+        for player_id in (team.player1_id, team.player2_id):
+            rows = (
+                db.query(RaceResult)
+                .join(Race, RaceResult.race_id == Race.id)
+                .filter(Race.game_id == game_id, RaceResult.player_id == player_id)
+                .all()
+            )
+            result[player_id] = sum(r.points or 0 for r in rows)
+    return result
 
 
 def _settle_market(db: Session, market: BetMarket, winning_label: str):
@@ -541,11 +705,12 @@ def _parse_firebase_export(data: dict) -> list:
 
 
 @router.get("/elo-import", response_class=HTMLResponse)
-def elo_import_page(request: Request, db: Session = Depends(get_db)):
+def elo_import_page(request: Request, reset: str = None, db: Session = Depends(get_db)):
     admin = require_admin(request, db)
+    message = "All ELO data has been reset to defaults." if reset == "1" else None
     return templates.TemplateResponse(
         "admin/elo_import.html",
-        {"request": request, "user": admin, "message": None},
+        {"request": request, "user": admin, "message": message, "reset_success": reset == "1"},
     )
 
 
@@ -641,6 +806,22 @@ async def elo_import(
         "admin/elo_import.html",
         {"request": request, "user": get_current_user(request, db), "message": message},
     )
+
+
+@router.post("/elo/reset")
+def elo_reset(request: Request, db: Session = Depends(get_db)):
+    """Reset all player ELO stats to defaults and clear head-to-head records."""
+    require_admin(request, db)
+    db.query(Player).update({
+        "elo": 1000.0,
+        "total_wins": 0,
+        "shirt_swap_count": 0,
+        "total_games": 0,
+        "total_races": 0,
+    }, synchronize_session=False)
+    db.query(HeadToHead).delete()
+    db.commit()
+    return RedirectResponse("/admin/elo-import?reset=1", status_code=302)
 
 
 def _settle_elo_markets(db: Session):

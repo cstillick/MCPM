@@ -3,28 +3,29 @@
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-  <a href="/admin/games/{{ game.id }}" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; {{ game.name }}</a>
-  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">Enter Race {{ race.race_number }} Results</h1>
+  <a href="/admin/games/{{ game.id }}" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; {{ game.name }}</a>
+  <h1 class="text-2xl font-bold text-k-text">Race {{ race.race_number }} Results</h1>
 </div>
 
 <div class="max-w-lg">
-  <div class="bg-mk-surface rounded-xl border border-mk-border p-6">
-    <p class="text-sm text-mk-sub mb-5">
-      Assign a placement (1–8) to each player. Each placement must be unique.
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-6">
+    <p class="text-sm text-k-sub mb-1">
+      Exactly <strong class="text-k-text">4 players</strong> must race. Leave the rest as "Did Not Race".
     </p>
+    <p class="text-xs text-k-sub mb-5">Points: 1st = 3 pts &nbsp;·&nbsp; 2nd = 2 pts &nbsp;·&nbsp; 3rd = 1 pt &nbsp;·&nbsp; 4th = 0 pts</p>
 
-    <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/results"
-          x-data="resultsForm()">
-      <div class="space-y-3">
+    <form method="post" action="/admin/games/{{ game.id }}/races/{{ race.id }}/results">
+      <div class="space-y-2.5">
         {% for player in players %}
           <div class="flex items-center gap-4">
-            <label class="flex-1 font-semibold text-mk-text text-sm">{{ player.name }}</label>
-            <select name="player_{{ player.id }}" required
-                    class="bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber">
-              <option value="">—</option>
-              {% for p in range(1, 9) %}
-                <option value="{{ p }}">{{ p }}{% if p == 1 %} 🥇{% elif p == 2 %} 🥈{% elif p == 3 %} 🥉{% endif %}</option>
-              {% endfor %}
+            <label class="flex-1 font-semibold text-k-text text-sm">{{ player.name }}</label>
+            <select name="player_{{ player.id }}"
+                    class="bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent">
+              <option value="">Did Not Race</option>
+              <option value="1">1st 🥇 (+3 pts)</option>
+              <option value="2">2nd 🥈 (+2 pts)</option>
+              <option value="3">3rd 🥉 (+1 pt)</option>
+              <option value="4">4th (+0 pts)</option>
             </select>
           </div>
         {% endfor %}
@@ -32,23 +33,19 @@
 
       <div class="mt-6 flex gap-3">
         <button type="submit"
-                class="bg-mk-amber text-[#0A0A0B] font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
+                class="bg-k-accent text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors">
           Submit Results &amp; Settle Markets
         </button>
         <a href="/admin/games/{{ game.id }}"
-           class="bg-mk-surface border border-mk-border text-mk-text font-bold px-5 py-2.5 rounded-xl hover:border-mk-sub transition-colors">
+           class="bg-k-bg border border-k-border text-k-text font-semibold px-5 py-2.5 rounded-xl hover:border-k-sub transition-colors">
           Cancel
         </a>
       </div>
     </form>
   </div>
 
-  <p class="text-xs text-mk-sub mt-3">
+  <p class="text-xs text-k-sub mt-3">
     Submitting results will automatically settle all Race {{ race.race_number }} markets and credit winning bets.
   </p>
 </div>
-
-<script>
-function resultsForm() { return {}; }
-</script>
 {% endblock %}

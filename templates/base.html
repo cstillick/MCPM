@@ -6,24 +6,27 @@
   <title>{% block title %}ACT Predictions{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'mk-bg':      '#0A0A0B',
-            'mk-surface': '#131316',
-            'mk-border':  '#252530',
-            'mk-amber':   '#FF9500',
-            'mk-red':     '#FF3824',
-            'mk-green':   '#30D158',
-            'mk-text':    '#F5F5F0',
-            'mk-sub':     '#6E6E78',
+            'k-bg':      '#F3F4F6',
+            'k-surface': '#FFFFFF',
+            'k-border':  '#E5E7EB',
+            'k-text':    '#111827',
+            'k-sub':     '#6B7280',
+            'k-yes':     '#16A34A',
+            'k-no':      '#DC2626',
+            'k-accent':  '#4F46E5',
           },
           fontFamily: {
-            'display': ['Oxanium', 'monospace'],
+            'sans': ['Inter', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.05)',
           }
         }
       }
@@ -31,64 +34,31 @@
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
-    :root {
-      --bg:      #0A0A0B;
-      --surface: #131316;
-      --border:  #252530;
-      --amber:   #FF9500;
-      --red:     #FF3824;
-      --green:   #30D158;
-      --text:    #F5F5F0;
-      --sub:     #6E6E78;
-    }
-
     [x-cloak] { display: none !important; }
-
-    body {
-      background-image: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 39px,
-        var(--border) 39px,
-        var(--border) 40px
-      );
-      background-attachment: fixed;
-    }
-
-    @keyframes amber-pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
-    .animate-amber-pulse { animation: amber-pulse 1.5s ease-in-out infinite; }
-
-    /* Ensure selects render dark */
-    select option { background-color: var(--surface); color: var(--text); }
-
-    /* Color scheme for date inputs on dark */
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+    body { font-family: 'Inter', system-ui, sans-serif; }
   </style>
 </head>
-<body class="bg-mk-bg min-h-screen font-display text-mk-text">
+<body class="bg-k-bg min-h-screen text-k-text">
 
   <!-- Nav -->
-  <nav class="bg-mk-surface border-b border-mk-border">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-mk-amber font-extrabold text-xl tracking-widest flex items-center gap-2 uppercase">
-        <span class="text-2xl">🏎️</span> ACT Predictions
+  <nav class="bg-k-surface border-b border-k-border sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="font-bold text-lg text-k-accent flex items-center gap-2">
+        🏎️ ACT Predictions
       </a>
-      <div class="flex items-center gap-4 text-sm">
-        <a href="/" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Games</a>
-        <a href="/players" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Players</a>
+      <div class="flex items-center gap-1 text-sm">
+        <a href="/" class="px-3 py-1.5 rounded-md text-k-sub hover:text-k-text hover:bg-k-bg transition-colors font-medium">Markets</a>
+        <a href="/players" class="px-3 py-1.5 rounded-md text-k-sub hover:text-k-text hover:bg-k-bg transition-colors font-medium">Players</a>
         {% if user %}
-          <a href="/my-bets" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">My Bets</a>
-          <a href="/transactions" class="text-mk-text hover:text-mk-amber transition-colors font-medium tracking-wide">Transactions</a>
-          <span class="text-mk-amber font-bold tracking-wider">🪙 {{ user.coin_balance }}</span>
+          <a href="/my-bets" class="px-3 py-1.5 rounded-md text-k-sub hover:text-k-text hover:bg-k-bg transition-colors font-medium">My Bets</a>
+          <a href="/transactions" class="px-3 py-1.5 rounded-md text-k-sub hover:text-k-text hover:bg-k-bg transition-colors font-medium">Ledger</a>
+          <span class="ml-2 px-3 py-1.5 bg-k-bg rounded-md font-semibold text-k-accent">🪙 {{ user.coin_balance }}</span>
           {% if user.is_admin %}
-            <a href="/admin" class="bg-mk-amber text-[#0A0A0B] font-bold px-3 py-1 rounded hover:opacity-90 transition-opacity tracking-wide">Admin</a>
+            <a href="/admin" class="ml-1 bg-k-accent text-white font-semibold px-3 py-1.5 rounded-md hover:bg-indigo-600 transition-colors text-xs">Admin</a>
           {% endif %}
-          <a href="/logout" class="text-mk-sub hover:text-mk-text transition-colors font-medium">Logout ({{ user.username }})</a>
+          <a href="/logout" class="ml-2 text-k-sub hover:text-k-text transition-colors font-medium text-xs">{{ user.username }} · Logout</a>
         {% else %}
-          <a href="/login" class="border border-mk-amber text-mk-amber font-bold px-3 py-1 rounded hover:bg-mk-amber hover:text-[#0A0A0B] transition-colors">Login</a>
+          <a href="/login" class="ml-2 border border-k-accent text-k-accent font-semibold px-3 py-1.5 rounded-md hover:bg-k-accent hover:text-white transition-colors text-sm">Sign In</a>
         {% endif %}
       </div>
     </div>
@@ -97,7 +67,7 @@
   <!-- Flash messages -->
   {% if flash %}
     <div class="max-w-6xl mx-auto px-4 pt-4">
-      <div class="border-l-4 border-mk-green bg-mk-surface px-4 py-3 text-mk-text text-sm rounded-r">
+      <div class="bg-k-yes/10 border border-k-yes/30 text-k-text text-sm rounded-lg px-4 py-3">
         {{ flash }}
       </div>
     </div>
@@ -108,8 +78,8 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="text-center text-mk-sub text-xs py-6 mt-8 border-t border-mk-border tracking-widest uppercase">
-    ACT &mdash; Prediction Market
+  <footer class="text-center text-k-sub text-xs py-6 mt-8 border-t border-k-border">
+    ACT Prediction Market
   </footer>
 
 </body>

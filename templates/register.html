@@ -3,79 +3,57 @@
 
 {% block content %}
 <div class="max-w-md mx-auto mt-16">
-  <div class="bg-mk-surface rounded-xl border border-mk-border p-8">
+  <div class="bg-k-surface rounded-2xl border border-k-border shadow-card p-8">
     <div class="text-center mb-8">
       <div class="text-5xl mb-3">🏎️</div>
-      <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em]">REQUEST ACCESS</h1>
-      <p class="text-mk-sub text-sm mt-1">An admin will approve your account before you can log in</p>
+      <h1 class="text-2xl font-bold text-k-text">Request Access</h1>
+      <p class="text-k-sub text-sm mt-1">An admin will approve your account before you can log in</p>
     </div>
 
     {% if success %}
-      <div class="border-l-4 border-mk-green bg-mk-bg px-5 py-4 rounded-r text-center">
+      <div class="bg-k-yes/10 border border-k-yes/30 rounded-lg px-5 py-4 text-center">
         <div class="text-3xl mb-2">✅</div>
-        <p class="font-semibold text-mk-text">Request sent!</p>
-        <p class="text-sm mt-1 text-mk-sub">An admin will review and approve your account. Check back soon.</p>
+        <p class="font-semibold text-k-text">Request sent!</p>
+        <p class="text-sm mt-1 text-k-sub">An admin will review and approve your account. Check back soon.</p>
       </div>
-      <p class="text-center text-sm text-mk-sub mt-6">
-        <a href="/login" class="text-mk-amber font-semibold hover:opacity-80 transition-opacity">Back to sign in</a>
+      <p class="text-center text-sm text-k-sub mt-6">
+        <a href="/login" class="text-k-accent font-semibold hover:underline">Back to sign in</a>
       </p>
     {% else %}
       {% if error %}
-        <div class="border-l-4 border-mk-red bg-mk-bg px-4 py-3 rounded-r mb-5 text-sm text-mk-text">
+        <div class="bg-k-no/5 border border-k-no/30 rounded-lg px-4 py-3 mb-5 text-sm text-k-no">
           {{ error }}
         </div>
       {% endif %}
 
       <form method="post" action="/register" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">Username</label>
-          <input
-            type="text"
-            name="username"
-            required
-            autofocus
-            minlength="3"
-            maxlength="32"
-            pattern="[a-zA-Z0-9]+"
-            title="Letters and numbers only, 3–32 characters"
-            class="w-full bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber transition-colors"
-            placeholder="Letters and numbers only"
-          />
+          <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Username</label>
+          <input type="text" name="username" required autofocus minlength="3" maxlength="32"
+                 pattern="[a-zA-Z0-9]+" title="Letters and numbers only, 3–32 characters"
+                 class="w-full bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent transition-colors"
+                 placeholder="Letters and numbers only" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">Password</label>
-          <input
-            type="password"
-            name="password"
-            id="password"
-            required
-            minlength="6"
-            class="w-full bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber transition-colors"
-            placeholder="At least 6 characters"
-          />
+          <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Password</label>
+          <input type="password" name="password" id="password" required minlength="6"
+                 class="w-full bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent transition-colors"
+                 placeholder="At least 6 characters" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-mk-sub mb-1 uppercase tracking-widest">Confirm Password</label>
-          <input
-            type="password"
-            name="confirm_password"
-            id="confirm_password"
-            required
-            minlength="6"
-            class="w-full bg-mk-bg border border-mk-border text-mk-text rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-mk-amber focus:border-mk-amber transition-colors"
-            placeholder="Repeat your password"
-          />
+          <label class="block text-xs font-semibold text-k-sub mb-1 uppercase tracking-wider">Confirm Password</label>
+          <input type="password" name="confirm_password" id="confirm_password" required minlength="6"
+                 class="w-full bg-k-bg border border-k-border text-k-text rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent transition-colors"
+                 placeholder="Repeat your password" />
         </div>
-        <button
-          type="submit"
-          class="w-full bg-mk-amber text-[#0A0A0B] font-bold py-2.5 rounded-lg hover:opacity-90 transition-opacity tracking-wide"
-        >
+        <button type="submit"
+                class="w-full bg-k-accent text-white font-semibold py-2.5 rounded-lg hover:bg-indigo-600 transition-colors">
           Request Access
         </button>
       </form>
 
-      <p class="text-center text-sm text-mk-sub mt-5">
-        Already have an account? <a href="/login" class="text-mk-amber font-semibold hover:opacity-80 transition-opacity">Sign in</a>
+      <p class="text-center text-sm text-k-sub mt-5">
+        Already have an account? <a href="/login" class="text-k-accent font-semibold hover:underline">Sign in</a>
       </p>
 
       <script>

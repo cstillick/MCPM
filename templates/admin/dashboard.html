@@ -1,40 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard — MK Predictions{% endblock %}
+{% block title %}Admin Dashboard — ACT Predictions{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
-  <h1 class="text-3xl font-extrabold text-mk-text tracking-[0.05em]">⚙️ Admin Dashboard</h1>
+  <h1 class="text-2xl font-bold text-k-text">Admin Dashboard</h1>
 </div>
 
 <!-- Quick actions -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
   <a href="/admin/games/create"
-     class="bg-mk-surface border border-mk-amber text-mk-amber rounded-xl p-4 text-center font-bold transition-colors hover:bg-mk-amber/10 relative">
+     class="bg-k-surface border border-k-accent/30 text-k-accent rounded-xl p-4 text-center font-semibold transition-all hover:bg-k-accent hover:text-white shadow-card text-sm">
     <div class="text-2xl mb-1">🏁</div>
     Create Game
   </a>
   <a href="/admin/users"
-     class="bg-mk-surface border border-mk-border text-mk-text rounded-xl p-4 text-center font-bold transition-colors hover:border-mk-amber relative">
+     class="bg-k-surface border border-k-border text-k-text rounded-xl p-4 text-center font-semibold transition-all hover:border-k-accent/40 shadow-card relative text-sm">
     <div class="text-2xl mb-1">👤</div>
-    Manage Users
+    Users
     {% if pending_count > 0 %}
-      <span class="absolute -top-2 -right-2 bg-mk-amber text-[#0A0A0B] text-xs font-extrabold rounded-full w-6 h-6 flex items-center justify-center">
+      <span class="absolute -top-2 -right-2 bg-k-no text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
         {{ pending_count }}
       </span>
     {% endif %}
   </a>
   <a href="/admin/elo-import"
-     class="bg-mk-surface border border-mk-border text-mk-text rounded-xl p-4 text-center font-bold transition-colors hover:border-mk-green hover:text-mk-green">
+     class="bg-k-surface border border-k-border text-k-text rounded-xl p-4 text-center font-semibold transition-all hover:border-k-accent/40 shadow-card text-sm">
     <div class="text-2xl mb-1">📊</div>
     Import ELOs
   </a>
   <a href="/players"
-     class="bg-mk-surface border border-mk-border text-mk-sub rounded-xl p-4 text-center font-bold transition-colors hover:border-mk-sub hover:text-mk-text">
+     class="bg-k-surface border border-k-border text-k-text rounded-xl p-4 text-center font-semibold transition-all hover:border-k-accent/40 shadow-card text-sm">
     <div class="text-2xl mb-1">🎮</div>
-    View Players
+    Players
   </a>
   <a href="/admin/transactions"
-     class="bg-mk-surface border border-mk-border text-mk-sub rounded-xl p-4 text-center font-bold transition-colors hover:border-mk-sub hover:text-mk-text">
+     class="bg-k-surface border border-k-border text-k-text rounded-xl p-4 text-center font-semibold transition-all hover:border-k-accent/40 shadow-card text-sm">
     <div class="text-2xl mb-1">💰</div>
     Transactions
   </a>
@@ -42,37 +42,37 @@
 
 <!-- Games list -->
 <section>
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">All Games</h2>
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">All Games</h2>
   {% if games %}
-    <div class="bg-mk-surface rounded-xl border border-mk-border overflow-hidden">
+    <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-mk-border">
-            <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">Game</th>
-            <th class="px-4 py-3 text-center text-mk-sub text-xs uppercase tracking-widest">Status</th>
-            <th class="px-4 py-3 text-center text-mk-sub text-xs uppercase tracking-widest">Teams</th>
-            <th class="px-4 py-3 text-center text-mk-sub text-xs uppercase tracking-widest">Races Done</th>
-            <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Actions</th>
+          <tr class="border-b border-k-border bg-k-bg">
+            <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Game</th>
+            <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Status</th>
+            <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Teams</th>
+            <th class="px-4 py-3 text-center text-k-sub text-xs font-semibold uppercase tracking-widest">Races Done</th>
+            <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for game in games %}
             {% set completed_races = game.races | selectattr('status', 'equalto', 'completed') | list | length %}
-            <tr class="border-b border-mk-border hover:bg-[#1a1a1f] transition-colors">
-              <td class="px-4 py-3 font-semibold text-mk-text">{{ game.name }}</td>
+            <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+              <td class="px-4 py-3 font-semibold text-k-text">{{ game.name }}</td>
               <td class="px-4 py-3 text-center">
-                <span class="text-xs font-bold tracking-widest uppercase
-                  {% if game.status == 'live' %}text-mk-amber
-                  {% elif game.status == 'upcoming' %}text-mk-sub
-                  {% else %}text-mk-green{% endif %}">
-                  {{ game.status | upper }}
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                  {% if game.status == 'live' %}bg-k-yes/10 text-k-yes
+                  {% elif game.status == 'upcoming' %}bg-k-bg text-k-sub border border-k-border
+                  {% else %}bg-k-yes/10 text-k-yes{% endif %}">
+                  {{ game.status | capitalize }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-center text-mk-sub font-display">{{ game.teams | length }}</td>
-              <td class="px-4 py-3 text-center text-mk-sub font-display">{{ completed_races }}/16</td>
+              <td class="px-4 py-3 text-center text-k-sub">{{ game.teams | length }}</td>
+              <td class="px-4 py-3 text-center text-k-sub">{{ completed_races }}/16</td>
               <td class="px-4 py-3 text-right">
                 <a href="/admin/games/{{ game.id }}"
-                   class="text-mk-amber hover:opacity-80 transition-opacity font-medium text-xs">Manage</a>
+                   class="text-k-accent hover:underline font-medium text-xs">Manage</a>
               </td>
             </tr>
           {% endfor %}
@@ -80,7 +80,7 @@
       </table>
     </div>
   {% else %}
-    <p class="text-mk-sub italic">No games yet. <a href="/admin/games/create" class="text-mk-amber hover:opacity-80 transition-opacity">Create one.</a></p>
+    <p class="text-k-sub italic">No games yet. <a href="/admin/games/create" class="text-k-accent hover:underline">Create one.</a></p>
   {% endif %}
 </section>
 {% endblock %}

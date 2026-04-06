@@ -3,38 +3,39 @@
 
 {% block content %}
 <div class="mb-4">
-  <a href="/games/{{ game.id }}" class="text-sm text-mk-sub hover:text-mk-text transition-colors">&larr; {{ game.name }}</a>
-  <h1 class="text-2xl font-extrabold text-mk-text tracking-[0.05em] mt-1">Race {{ race.race_number }}</h1>
-</div>
-
-<!-- Race status badge -->
-<div class="mb-6">
-  <span class="text-sm font-bold tracking-widest uppercase
-    {% if race.status == 'betting_open' %}text-mk-amber
-    {% elif race.status == 'completed' %}text-mk-green
-    {% else %}text-mk-sub{% endif %}">
-    {{ race.status | upper | replace('_', ' ') }}
-  </span>
+  <a href="/games/{{ game.id }}" class="text-sm text-k-sub hover:text-k-text transition-colors">&larr; {{ game.name }}</a>
+  <div class="flex items-center gap-3 mt-1">
+    <h1 class="text-2xl font-bold text-k-text">Race {{ race.race_number }}</h1>
+    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full
+      {% if race.status == 'betting_open' %}bg-k-accent text-white
+      {% elif race.status == 'completed' %}bg-k-yes/10 text-k-yes
+      {% else %}bg-k-bg text-k-sub border border-k-border{% endif %}">
+      {{ race.status | upper | replace('_', ' ') }}
+    </span>
+  </div>
 </div>
 
 <!-- Results (if completed) -->
 {% if race.status == 'completed' and race.results %}
-  <section class="mb-8">
-    <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">🏆 Results</h2>
-    <div class="bg-mk-surface rounded-xl border border-mk-border p-4 max-w-sm">
+  <section class="mb-6">
+    <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">Results</h2>
+    <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-4 max-w-sm">
       {% for result in race.results %}
-        <div class="flex items-center gap-3 py-2 {% if not loop.last %}border-b border-mk-border{% endif %}">
-          <span class="font-extrabold w-6 text-center font-display
-            {% if result.placement == 1 %}text-mk-amber text-lg
-            {% elif result.placement == 2 %}text-mk-sub
-            {% elif result.placement == 3 %}text-mk-amber/60
-            {% else %}text-mk-border{% endif %}">
-            {{ result.placement }}
+        <div class="flex items-center gap-3 py-2.5 {% if not loop.last %}border-b border-k-border{% endif %}">
+          <span class="font-bold w-8 text-center text-sm
+            {% if result.placement == 1 %}text-amber-500
+            {% elif result.placement == 2 %}text-k-sub
+            {% elif result.placement == 3 %}text-amber-400/70
+            {% else %}text-k-sub{% endif %}">
+            {% if result.placement == 1 %}🥇
+            {% elif result.placement == 2 %}🥈
+            {% elif result.placement == 3 %}🥉
+            {% else %}4th{% endif %}
           </span>
-          <span class="font-medium text-mk-text">{{ result.player.name }}</span>
-          {% if result.placement <= 2 %}
-            <span class="ml-auto text-xs text-mk-amber font-bold tracking-wide">Shirt Swap</span>
-          {% endif %}
+          <span class="font-semibold text-k-text flex-1">{{ result.player.name }}</span>
+          <span class="text-xs font-semibold text-k-yes bg-k-yes/10 px-2 py-0.5 rounded-full">
+            +{{ result.points or 0 }} pts
+          </span>
         </div>
       {% endfor %}
     </div>
@@ -43,98 +44,110 @@
 
 <!-- Race Markets -->
 <section>
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">🪙 Race {{ race.race_number }} Markets</h2>
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">Race {{ race.race_number }} Markets</h2>
 
   {% if race.status == 'pending' %}
-    <div class="bg-mk-surface border border-mk-border rounded-xl p-6 text-center">
+    <div class="bg-k-surface border border-k-border rounded-xl shadow-card p-8 text-center">
       <p class="text-2xl mb-2">⏳</p>
-      <p class="text-mk-sub">Betting hasn't opened for this race yet.</p>
+      <p class="text-k-sub">Betting hasn't opened for this race yet.</p>
     </div>
   {% elif race_markets %}
     {% if not user %}
-      <div class="border-l-4 border-mk-amber bg-mk-surface px-4 py-3 rounded-r mb-4 text-sm text-mk-text">
-        <a href="/login" class="font-bold text-mk-amber">Log in</a> to place bets.
+      <div class="bg-k-accent/5 border border-k-accent/20 rounded-lg px-4 py-3 mb-4 text-sm text-k-text">
+        <a href="/login" class="font-semibold text-k-accent">Sign in</a> to place bets.
       </div>
     {% endif %}
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-3 sm:grid-cols-2">
       {% for market in race_markets %}
-        <div class="bg-mk-surface rounded-xl border border-mk-border p-4">
-          <div class="flex justify-between items-start mb-3">
-            <p class="font-semibold text-mk-text text-sm">{{ market.description }}</p>
-            <span class="text-xs ml-2 shrink-0 font-bold tracking-widest uppercase
-              {% if market.status == 'open' %}text-mk-green
-              {% elif market.status == 'settled' %}text-mk-sub
-              {% else %}text-mk-amber{% endif %}">
-              {{ market.status }}
+        <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-4">
+          <div class="flex justify-between items-start mb-1">
+            <p class="font-semibold text-k-text text-sm flex-1 pr-2">{{ market.description }}</p>
+            <span class="text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full
+              {% if market.status == 'open' %}bg-k-yes/10 text-k-yes
+              {% elif market.status == 'settled' %}bg-k-bg text-k-sub border border-k-border
+              {% else %}bg-amber-50 text-amber-600 border border-amber-200{% endif %}">
+              {{ market.status | capitalize }}
             </span>
           </div>
+          <p class="text-xs text-k-sub mb-3">{{ market.market_type | replace('_', ' ') | capitalize }}</p>
 
           {% set user_bet = user_bets.get(market.id) %}
           {% set total_pool = market.options | sum(attribute='total_coins_wagered') %}
 
           {% if user_bet %}
-            <div class="border-l-4 border-mk-amber bg-mk-bg px-3 py-3 rounded-r text-sm">
-              <p class="text-mk-text font-medium">Your bet: <strong>{{ user_bet.option.label }}</strong> &mdash; 🪙 {{ user_bet.coins_wagered }}</p>
+            <div class="bg-k-accent/5 border border-k-accent/20 rounded-lg px-3 py-2.5 text-sm">
+              <p class="text-k-text font-medium">Bet: <strong>{{ user_bet.option.label }}</strong> · 🪙 {{ user_bet.coins_wagered }}</p>
               {% if market.status == 'settled' %}
                 {% if user_bet.payout and user_bet.payout > 0 %}
-                  <p class="text-mk-green font-bold mt-1">Won 🪙 {{ user_bet.payout }}!</p>
+                  <p class="text-k-yes font-bold mt-1">Won 🪙 {{ user_bet.payout }}</p>
                 {% else %}
-                  <p class="text-mk-red mt-1">Lost &mdash; winner was {{ market.winning_outcome }}</p>
+                  <p class="text-k-no mt-1">Lost · winner was <strong>{{ market.winning_outcome }}</strong></p>
                 {% endif %}
               {% endif %}
             </div>
           {% elif market.status == 'open' and user %}
             <form method="post" action="/bets/place" x-data="{ selected: null, amount: 50 }">
               <input type="hidden" name="market_id" value="{{ market.id }}" />
-              <div class="space-y-2 mb-3">
+              <div class="space-y-1.5 mb-3">
                 {% for option in market.options %}
-                  {% set pct = (option.total_coins_wagered / total_pool * 100) | round(1) if total_pool > 0 else 0 %}
-                  <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg border hover:border-mk-amber transition-colors"
-                         :class="selected === {{ option.id }} ? 'border-mk-amber bg-mk-amber/10' : 'border-mk-border'">
+                  {% set pct = (option.total_coins_wagered / total_pool * 100) | round(0) | int if total_pool > 0 else 0 %}
+                  {% set is_yes = loop.first %}
+                  <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg border-2 transition-all"
+                         :class="selected === {{ option.id }} ? '{% if is_yes %}border-k-yes bg-k-yes/5{% else %}border-k-no bg-k-no/5{% endif %}' : 'border-k-border hover:border-k-sub'">
                     <input type="radio" name="option_id" value="{{ option.id }}"
-                           @change="selected = {{ option.id }}" class="accent-[#FF9500]" required />
-                    <span class="flex-1 text-sm font-medium text-mk-text">{{ option.label }}</span>
-                    <span class="text-xs text-mk-sub">{{ pct }}% &middot; 🪙 {{ option.total_coins_wagered }}</span>
+                           @change="selected = {{ option.id }}" class="hidden" required />
+                    <span class="text-xs font-bold px-2 py-0.5 rounded
+                      {% if is_yes %}bg-k-yes text-white{% else %}bg-k-no text-white{% endif %}">
+                      {{ option.label }}
+                    </span>
+                    <span class="flex-1 text-sm font-medium text-k-text"></span>
+                    <span class="text-sm font-bold {% if is_yes %}text-k-yes{% else %}text-k-no{% endif %}">{{ pct }}%</span>
+                    <span class="text-xs text-k-sub">🪙 {{ option.total_coins_wagered }}</span>
                   </label>
                 {% endfor %}
               </div>
               <div class="flex items-center gap-2">
+                <span class="text-xs text-k-sub">🪙</span>
                 <input type="number" name="coins_wagered" x-model="amount" min="1" max="{{ user.coin_balance }}"
-                       class="w-24 bg-mk-bg border border-mk-border text-mk-text rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-mk-amber" />
-                <span class="text-xs text-mk-sub">coins</span>
+                       class="w-24 bg-k-bg border border-k-border text-k-text rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-k-accent/30 focus:border-k-accent" />
+                <span class="text-xs text-k-sub">max {{ user.coin_balance }}</span>
                 <button type="submit" :disabled="!selected || amount < 1"
-                        class="ml-auto bg-mk-amber text-[#0A0A0B] disabled:opacity-40 text-sm font-bold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
-                  Bet
+                        class="ml-auto bg-k-accent text-white disabled:opacity-40 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">
+                  Place Bet
                 </button>
               </div>
             </form>
           {% else %}
             <div class="space-y-2">
               {% for option in market.options %}
-                {% set pct = (option.total_coins_wagered / total_pool * 100) | round(1) if total_pool > 0 else 0 %}
+                {% set pct = (option.total_coins_wagered / total_pool * 100) | round(0) | int if total_pool > 0 else 0 %}
+                {% set is_yes = loop.first %}
                 <div class="flex items-center gap-2">
-                  <span class="text-sm w-32 truncate
-                    {% if market.winning_outcome == option.label %}font-bold text-mk-green{% else %}text-mk-sub{% endif %}">
+                  <span class="text-xs font-bold px-1.5 py-0.5 rounded w-16 text-center
+                    {% if market.winning_outcome == option.label %}{% if is_yes %}bg-k-yes text-white{% else %}bg-k-no text-white{% endif %}
+                    {% elif is_yes %}bg-k-yes/10 text-k-yes{% else %}bg-k-no/10 text-k-no{% endif %}">
                     {{ option.label }}{% if market.winning_outcome == option.label %} ✓{% endif %}
                   </span>
-                  <div class="flex-1 bg-mk-border rounded-full h-2">
-                    <div class="bg-mk-sub h-2 rounded-full" style="width: {{ pct }}%"></div>
+                  <div class="flex-1 bg-k-bg rounded-full h-2 border border-k-border">
+                    <div class="h-2 rounded-full {% if is_yes %}bg-k-yes{% else %}bg-k-no{% endif %}" style="width: {{ pct }}%"></div>
                   </div>
-                  <span class="text-xs text-mk-sub w-12 text-right">{{ pct }}%</span>
+                  <span class="text-xs font-semibold text-k-sub w-10 text-right">{{ pct }}%</span>
                 </div>
               {% endfor %}
             </div>
           {% endif %}
 
           {% if total_pool > 0 %}
-            <p class="text-xs text-mk-sub mt-3 text-right">Pool: 🪙 {{ total_pool }}</p>
+            <p class="text-xs text-k-sub mt-3 text-right">Pool: 🪙 {{ total_pool }}</p>
           {% endif %}
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <p class="text-mk-sub italic">No markets for this race.</p>
+    <div class="bg-k-surface rounded-xl border border-k-border shadow-card p-8 text-center text-k-sub">
+      No markets for this race.
+    </div>
   {% endif %}
 </section>
 {% endblock %}

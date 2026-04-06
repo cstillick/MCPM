@@ -2,45 +2,43 @@
 {% block title %}Players — ACT Predictions{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-extrabold text-mk-text tracking-[0.05em] mb-6">🎮 Players</h1>
+<h1 class="text-2xl font-bold text-k-text mb-6">Players</h1>
 
 <!-- ELO Leaderboard -->
 <section class="mb-10">
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">ELO Leaderboard</h2>
-  <div class="bg-mk-surface rounded-xl border border-mk-border overflow-hidden">
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">ELO Leaderboard</h2>
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-hidden">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-b border-mk-border">
-          <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">#</th>
-          <th class="px-4 py-3 text-left text-mk-sub text-xs uppercase tracking-widest">Player</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">ELO</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Wins</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Games</th>
-          <th class="px-4 py-3 text-right text-mk-sub text-xs uppercase tracking-widest">Shirt Swap %</th>
+        <tr class="border-b border-k-border bg-k-bg">
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">#</th>
+          <th class="px-4 py-3 text-left text-k-sub text-xs font-semibold uppercase tracking-widest">Player</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">ELO</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Wins</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Games</th>
+          <th class="px-4 py-3 text-right text-k-sub text-xs font-semibold uppercase tracking-widest">Shirt Swap %</th>
         </tr>
       </thead>
       <tbody>
         {% for player in players %}
-          <tr class="border-b border-mk-border hover:bg-[#1a1a1f] transition-colors">
-            <td class="px-4 py-3 font-bold text-mk-sub">
+          <tr class="border-b border-k-border hover:bg-k-bg transition-colors">
+            <td class="px-4 py-3 text-k-sub font-medium">
               {% if loop.index == 1 %}🥇
               {% elif loop.index == 2 %}🥈
               {% elif loop.index == 3 %}🥉
-              {% else %}{{ loop.index }}{% endif %}
+              {% else %}<span class="text-k-sub">{{ loop.index }}</span>{% endif %}
             </td>
-            <td class="px-4 py-3 font-semibold text-mk-text">{{ player.name }}</td>
-            <td class="px-4 py-3 text-right font-bold text-mk-amber font-display">{{ player.elo | round(1) }}</td>
-            <td class="px-4 py-3 text-right text-mk-sub font-display">{{ player.total_wins }}</td>
-            <td class="px-4 py-3 text-right text-mk-sub font-display">{{ player.total_games }}</td>
+            <td class="px-4 py-3 font-semibold text-k-text">{{ player.name }}</td>
+            <td class="px-4 py-3 text-right font-bold text-k-accent">{{ player.elo | round(1) }}</td>
+            <td class="px-4 py-3 text-right text-k-sub">{{ player.total_wins }}</td>
+            <td class="px-4 py-3 text-right text-k-sub">{{ player.total_games }}</td>
             <td class="px-4 py-3 text-right">
-              <span class="text-mk-amber font-bold text-xs tracking-widest">
-                {{ player.shirt_swap_pct }}%
-              </span>
+              <span class="font-semibold text-k-text text-xs">{{ player.shirt_swap_pct }}%</span>
             </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-mk-sub italic">
+            <td colspan="6" class="px-4 py-8 text-center text-k-sub italic">
               No players yet. Import player data from the admin panel.
             </td>
           </tr>
@@ -53,15 +51,15 @@
 <!-- Head-to-Head Matrix -->
 {% if players | length > 1 %}
 <section>
-  <h2 class="text-sm font-bold text-mk-text tracking-[0.05em] uppercase mb-3">Head-to-Head Win Rates</h2>
-  <p class="text-xs text-mk-sub mb-3">Cells show win rate of the <strong class="text-mk-text">row player</strong> vs the column player.</p>
-  <div class="bg-mk-surface rounded-xl border border-mk-border overflow-x-auto">
+  <h2 class="text-xs font-semibold text-k-sub uppercase tracking-widest mb-3">Head-to-Head Win Rates</h2>
+  <p class="text-xs text-k-sub mb-3">Cells show win rate of the <strong class="text-k-text">row player</strong> vs the column player.</p>
+  <div class="bg-k-surface rounded-xl border border-k-border shadow-card overflow-x-auto">
     <table class="text-xs border-collapse min-w-full">
       <thead>
         <tr>
-          <th class="px-3 py-2 text-left font-semibold text-mk-sub border-b border-r border-mk-border bg-mk-bg">vs</th>
+          <th class="px-3 py-2 text-left font-semibold text-k-sub border-b border-r border-k-border bg-k-bg">vs</th>
           {% for p in players %}
-            <th class="px-3 py-2 text-center font-semibold text-mk-sub border-b border-mk-border whitespace-nowrap bg-mk-bg">
+            <th class="px-3 py-2 text-center font-semibold text-k-sub border-b border-k-border whitespace-nowrap bg-k-bg">
               {{ p.name }}
             </th>
           {% endfor %}
@@ -69,27 +67,27 @@
       </thead>
       <tbody>
         {% for row_player in players %}
-          <tr class="hover:bg-[#1a1a1f] transition-colors border-b border-mk-border">
-            <td class="px-3 py-2 font-semibold text-mk-text border-r border-mk-border whitespace-nowrap bg-mk-bg">
+          <tr class="hover:bg-k-bg transition-colors border-b border-k-border">
+            <td class="px-3 py-2 font-semibold text-k-text border-r border-k-border whitespace-nowrap bg-k-bg">
               {{ row_player.name }}
             </td>
             {% for col_player in players %}
               {% if row_player.id == col_player.id %}
-                <td class="px-3 py-2 text-center bg-mk-border text-mk-border">&mdash;</td>
+                <td class="px-3 py-2 text-center bg-k-bg text-k-border">—</td>
               {% else %}
                 {% set record = h2h.get(row_player.id, {}).get(col_player.id) %}
                 {% if record %}
                   {% set total = record.wins + record.losses %}
                   {% set pct = (record.wins / total * 100) | round(0) | int if total > 0 else 0 %}
-                  <td class="px-3 py-2 text-center font-display
-                    {% if pct >= 60 %}text-mk-green font-bold
-                    {% elif pct <= 40 %}text-mk-red
-                    {% else %}text-mk-sub{% endif %}">
+                  <td class="px-3 py-2 text-center
+                    {% if pct >= 60 %}text-k-yes font-bold
+                    {% elif pct <= 40 %}text-k-no
+                    {% else %}text-k-sub{% endif %}">
                     {{ pct }}%
-                    <span class="text-mk-border font-normal">({{ record.wins }}-{{ record.losses }})</span>
+                    <span class="text-k-border font-normal">({{ record.wins }}-{{ record.losses }})</span>
                   </td>
                 {% else %}
-                  <td class="px-3 py-2 text-center text-mk-border">—</td>
+                  <td class="px-3 py-2 text-center text-k-border">—</td>
                 {% endif %}
               {% endif %}
             {% endfor %}
