@@ -644,8 +644,9 @@ def _settle_market(db: Session, market: BetMarket, winning_label: str):
 def _parse_firebase_export(data: dict) -> list:
     """Convert a Firebase RTDB export to the player-list format expected by the importer.
 
-    Extracts ELO values from data["ELO"] and computes total_games, total_races,
-    and total_wins per player from data["act-history"].
+    Extracts ELO values from data["ELO_History"] (preferred) or data["ELO"] (fallback).
+    For ELO_History, picks the entry with the highest "at" timestamp per player.
+    Stats are computed automatically from data["act-history"].
     """
     # Step 1: compute stats from act-history
     stats: dict = {}  # {stripped_name: {games, races, wins}}
@@ -689,17 +690,32 @@ def _parse_firebase_export(data: dict) -> list:
                     if sname:
                         stats[sname]["races"] += 1
 
-    # Step 2: build player list from ELO dict
+    # Step 2: build player list from ELO_History (preferred) or ELO (fallback)
     result = []
-    for name, elo in data["ELO"].items():
-        s = stats.get(name.strip(), {"games": 0, "races": 0, "wins": 0})
-        result.append({
-            "name": name,
-            "elo": float(elo),
-            "total_wins": s["wins"],
-            "total_games": s["games"],
-            "total_races": s["races"],
-        })
+    if "ELO_History" in data:
+        for name, history in data["ELO_History"].items():
+            if not isinstance(history, dict):
+                continue
+            latest = max(history.values(), key=lambda e: e.get("at", 0) if isinstance(e, dict) else 0)
+            elo = float(latest["value"])
+            s = stats.get(name.strip(), {"games": 0, "races": 0, "wins": 0})
+            result.append({
+                "name": name,
+                "elo": elo,
+                "total_wins": s["wins"],
+                "total_games": s["games"],
+                "total_races": s["races"],
+            })
+    else:
+        for name, elo in data["ELO"].items():
+            s = stats.get(name.strip(), {"games": 0, "races": 0, "wins": 0})
+            result.append({
+                "name": name,
+                "elo": float(elo),
+                "total_wins": s["wins"],
+                "total_games": s["games"],
+                "total_races": s["races"],
+            })
     return result
 
 
@@ -731,7 +747,7 @@ async def elo_import(
             status_code=400,
         )
 
-    if isinstance(data, dict) and "ELO" in data:
+    if isinstance(data, dict) and ("ELO_History" in data or "ELO" in data):
         data = _parse_firebase_export(data)
     elif not isinstance(data, list):
         return templates.TemplateResponse(

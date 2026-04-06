@@ -39,13 +39,18 @@
     <div>
       <h2 class="font-semibold text-k-text mb-1 text-sm uppercase tracking-wider">Format 1 — Firebase RTDB Export</h2>
       <p class="text-sm text-k-sub mb-3">
-        Upload a raw Firebase Realtime Database export. ELO values are read from the <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">ELO</code> key.
+        Upload a raw Firebase Realtime Database export. ELO values are read from the <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">ELO_History</code> key — the most recent entry per player (highest <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">at</code> timestamp) is used.
         Stats are computed automatically from the <code class="bg-k-bg px-1 rounded text-k-accent text-xs border border-k-border">act-history</code> key if present.
       </p>
       <pre class="bg-k-bg border border-k-border text-k-yes text-xs rounded-lg p-4 overflow-x-auto leading-relaxed"><code>{
-  "ELO": {
-    "Mario": 1523,
-    "Luigi": 1478
+  "ELO_History": {
+    "Mario": {
+      "-pushKey1": { "at": 1757211060417, "value": 1523 },
+      "-pushKey2": { "at": 1757211062210, "value": 1531 }
+    },
+    "Luigi": {
+      "-pushKey1": { "at": 1757211060417, "value": 1478 }
+    }
   },
   "act-history": { ... }
 }</code></pre>
