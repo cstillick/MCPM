@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user, require_login
 from database import get_db
-from models import Bet, BetMarket, BetOption, User
+from models import Bet, BetMarket, BetOption, CoinTransaction, Game, User
 from template_env import templates
 
 router = APIRouter()
@@ -87,6 +87,18 @@ def place_bet(
         coins_wagered=coins_wagered,
     )
     db.add(bet)
+    db.flush()  # get bet.id before commit
+
+    game = db.query(Game).filter(Game.id == market.game_id).first()
+    description = f"{game.name} — {market.description} — {option.label}"
+    db.add(CoinTransaction(
+        user_id=user.id,
+        bet_id=bet.id,
+        type="pending",
+        description=description,
+        coins_wagered=coins_wagered,
+        net_amount=-coins_wagered,
+    ))
     db.commit()
 
     # Redirect back to the game or race page

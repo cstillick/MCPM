@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}My Transactions — ACT Predictions{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-extrabold text-gray-800">💰 My Transactions</h1>
+  <span class="text-yellow-500 font-bold text-lg">🪙 {{ user.coin_balance }}</span>
+</div>
+
+<!-- Filters -->
+<form method="get" action="/transactions" class="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-3 items-end">
+  <div>
+    <label class="block text-xs font-semibold text-gray-500 mb-1">Type</label>
+    <select name="txn_type"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+      <option value="">All</option>
+      <option value="pending"     {% if filters.type == 'pending'     %}selected{% endif %}>Pending</option>
+      <option value="won"         {% if filters.type == 'won'         %}selected{% endif %}>Won</option>
+      <option value="lost"        {% if filters.type == 'lost'        %}selected{% endif %}>Lost</option>
+      <option value="admin_grant" {% if filters.type == 'admin_grant' %}selected{% endif %}>Admin Grant</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-semibold text-gray-500 mb-1">From</label>
+    <input type="date" name="from_date" value="{{ filters.from }}"
+           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+  </div>
+  <div>
+    <label class="block text-xs font-semibold text-gray-500 mb-1">To</label>
+    <input type="date" name="to_date" value="{{ filters.to }}"
+           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+  </div>
+  <button type="submit"
+          class="mk-red mk-red-hover text-white font-bold px-4 py-2 rounded-lg text-sm transition">
+    Apply
+  </button>
+  <a href="/transactions" class="text-sm text-gray-400 hover:text-gray-600 py-2">Clear</a>
+  <a href="/transactions/export{% if filters.type or filters.from or filters.to %}?{% if filters.type %}txn_type={{ filters.type }}{% endif %}{% if filters.from %}{% if filters.type %}&{% endif %}from_date={{ filters.from }}{% endif %}{% if filters.to %}{% if filters.type or filters.from %}&{% endif %}to_date={{ filters.to }}{% endif %}{% endif %}"
+     class="ml-auto text-sm bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg transition">
+    Export CSV
+  </a>
+</form>
+
+<!-- Table -->
+{% if transactions %}
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+        <tr>
+          <th class="px-4 py-3 text-left">Date Placed</th>
+          <th class="px-4 py-3 text-left">Description</th>
+          <th class="px-4 py-3 text-center">Type</th>
+          <th class="px-4 py-3 text-right">Wagered</th>
+          <th class="px-4 py-3 text-right">Net</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for txn in transactions %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+              {{ txn.created_at.strftime('%b %d, %Y') }}
+            </td>
+            <td class="px-4 py-3 text-gray-700">{{ txn.description }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if txn.type == 'won' %}
+                <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Won</span>
+              {% elif txn.type == 'lost' %}
+                <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">Lost</span>
+              {% elif txn.type == 'pending' %}
+                <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">Pending</span>
+              {% else %}
+                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">Grant</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right text-gray-500">
+              {% if txn.coins_wagered %}🪙 {{ txn.coins_wagered }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-bold
+              {% if txn.net_amount > 0 %}text-green-600{% elif txn.net_amount < 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+              {% if txn.net_amount > 0 %}+{% endif %}{{ txn.net_amount }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="bg-white rounded-xl shadow p-10 text-center text-gray-400">
+    <p class="text-3xl mb-2">📭</p>
+    <p class="font-semibold">No transactions yet.</p>
+  </div>
+{% endif %}
+{% endblock %}

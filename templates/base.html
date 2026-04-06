@@ -26,6 +26,7 @@
         <a href="/players" class="text-white hover:text-yellow-300 font-medium">Players</a>
         {% if user %}
           <a href="/my-bets" class="text-white hover:text-yellow-300 font-medium">My Bets</a>
+          <a href="/transactions" class="text-white hover:text-yellow-300 font-medium">Transactions</a>
           <span class="text-yellow-300 font-bold">🪙 {{ user.coin_balance }}</span>
           {% if user.is_admin %}
             <a href="/admin" class="bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded hover:bg-yellow-300">Admin</a>

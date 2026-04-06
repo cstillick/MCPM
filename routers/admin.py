@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user, require_admin
 from database import get_db
+from datetime import datetime
+
 from models import (
-    Bet, BetMarket, BetOption, Game, HeadToHead,
+    Bet, BetMarket, BetOption, CoinTransaction, Game, HeadToHead,
     PendingRegistration, Player, Race, RaceResult, Team, User,
 )
 from auth import hash_password
@@ -110,6 +112,14 @@ def add_coins(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
     target.coin_balance += amount
+    db.add(CoinTransaction(
+        user_id=target.id,
+        bet_id=None,
+        type="admin_grant",
+        description="Admin coin grant",
+        coins_wagered=None,
+        net_amount=amount,
+    ))
     db.commit()
     return RedirectResponse("/admin/users", status_code=302)
 
@@ -447,14 +457,22 @@ def _settle_market(db: Session, market: BetMarket, winning_label: str):
     if winning_pool == 0:
         return  # no winners, coins already deducted — house keeps
 
+    now = datetime.utcnow()
     for bet in market.bets:
+        txn = db.query(CoinTransaction).filter(CoinTransaction.bet_id == bet.id).first()
         if bet.option_id == winning_option.id:
-            # Proportional share of the total pool
             payout = int((bet.coins_wagered / winning_pool) * total_pool)
             bet.payout = payout
             bet.user.coin_balance += payout
+            if txn:
+                txn.type = "won"
+                txn.net_amount = payout - bet.coins_wagered
+                txn.settled_at = now
         else:
             bet.payout = 0
+            if txn:
+                txn.type = "lost"
+                txn.settled_at = now
 
 
 # ── ELO import ────────────────────────────────────────────────────────────────

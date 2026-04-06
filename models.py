@@ -27,6 +27,7 @@ class User(Base):
     coin_balance = Column(Integer, default=1000)
 
     bets = relationship("Bet", back_populates="user")
+    transactions = relationship("CoinTransaction", back_populates="user")
 
 
 class Player(Base):
@@ -141,6 +142,24 @@ class BetOption(Base):
 
     market = relationship("BetMarket", back_populates="options")
     bets = relationship("Bet", back_populates="option")
+
+
+class CoinTransaction(Base):
+    __tablename__ = "coin_transactions"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False)
+    bet_id        = Column(Integer, ForeignKey("bets.id"), nullable=True)
+    # pending | won | lost | admin_grant
+    type          = Column(String, nullable=False)
+    description   = Column(String, nullable=False)
+    coins_wagered = Column(Integer, nullable=True)
+    net_amount    = Column(Integer, nullable=False)
+    created_at    = Column(DateTime, default=datetime.utcnow)
+    settled_at    = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="transactions")
+    bet  = relationship("Bet")
 
 
 class Bet(Base):
